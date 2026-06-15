@@ -1,0 +1,10 @@
+<svg width="232" height="44" viewBox="0 0 232 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stellaris Modding Utilities">
+  <g transform="translate(0,-2)">
+    <path d="M22 4 38.2 13.4 V32.2 L22 41.6 5.8 32.2 V13.4 Z" stroke="#7d8da8" stroke-width="1.5" stroke-linejoin="round" opacity="0.6" fill="none"></path>
+    <ellipse cx="22" cy="22.8" rx="13.7" ry="5.7" stroke="#29c6c0" stroke-width="1.7" transform="rotate(-28 22 22.8)" fill="none"></ellipse>
+    <circle cx="22" cy="22.8" r="4.9" fill="#29c6c0"></circle>
+    <path d="M33.9 15.3 L34.9 17.8 L37.5 18.8 L34.9 19.8 L33.9 22.3 L32.9 19.8 L30.3 18.8 L32.9 17.8 Z" fill="#f5a623"></path>
+  </g>
+  <text x="52" y="22" font-family="&#39;Space Grotesk&#39;, sans-serif" font-size="17.5" font-weight="700" letter-spacing="0.5" fill="currentColor">STELLARIS</text>
+  <text x="52" y="37" font-family="&#39;IBM Plex Mono&#39;, monospace" font-size="9.5" font-weight="500" letter-spacing="3.1" fill="#8a98b3">MODDING UTILITIES</text>
+</svg>

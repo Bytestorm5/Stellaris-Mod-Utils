@@ -3,6 +3,7 @@
 import JSZip from "jszip";
 import type { ModProject } from "../types";
 import {
+  effectiveCivicKey,
   generateCivicsFile,
   generateDescriptor,
   generateLocalisation,
@@ -44,7 +45,10 @@ export async function buildModZip(project: ModProject): Promise<Blob> {
     const dds = await imageDataUrlToDds(civic.iconDataUrl, 128);
     if (dds) {
       dir.file(
-        `gfx/interface/icons/governments/civics/${civic.key}.dds`,
+        `gfx/interface/icons/governments/civics/${effectiveCivicKey(
+          project,
+          civic,
+        )}.dds`,
         dds,
       );
     }

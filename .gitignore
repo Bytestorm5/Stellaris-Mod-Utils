@@ -5,3 +5,4 @@ _gamedump/
 .DS_Store
 .vercel
 *.tsbuildinfo
+_design/

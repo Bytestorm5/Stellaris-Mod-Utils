@@ -1,0 +1,164 @@
+/* ============================================================
+   COLORS — Stellaris Modding Utilities
+   Primitive scales (theme-independent) + semantic aliases that
+   flip between dark (default) and light themes.
+   ============================================================ */
+
+:root {
+  /* ---- Brand primitives ---------------------------------- */
+  /* Plasma cyan — primary accent, "active signal" */
+  --cyan-50:  #e6fbfa;
+  --cyan-100: #b9f3f0;
+  --cyan-200: #82e7e2;
+  --cyan-300: #4dd9d3;
+  --cyan-400: #29c6c0;
+  --cyan-500: #16a8a3;  /* light-mode anchor */
+  --cyan-600: #0f8783;
+  --cyan-700: #0d6a67;
+  --cyan-800: #0e504e;
+  --cyan-900: #0c3a39;
+
+  /* Stellar amber — secondary accent, "energy / star" */
+  --amber-50:  #fff5e3;
+  --amber-100: #ffe6b8;
+  --amber-200: #ffd180;
+  --amber-300: #ffbb47;
+  --amber-400: #f5a623;
+  --amber-500: #d8870f;
+  --amber-600: #ad6a0a;
+  --amber-700: #855009;
+  --amber-800: #5f3a09;
+
+  /* Void neutrals — cool blue-greys for surfaces */
+  --void-950: #070a11;
+  --void-900: #0a0e17;
+  --void-850: #0e131f;
+  --void-800: #121829;
+  --void-750: #161d30;
+  --void-700: #1c2438;
+  --void-600: #283248;
+  --void-500: #3a4761;
+  --void-400: #586a87;
+  --void-300: #7d8da8;
+  --void-200: #a9b6cc;
+  --void-100: #d4dbe8;
+  --void-50:  #eef1f7;
+  --void-25:  #f7f9fc;
+  --white:    #ffffff;
+
+  /* Signal hues (semantic, shared across themes) */
+  --plasma-blue:   #4d8dff;
+  --plasma-blue-d: #2f6fe0;
+  --nebula-violet: #9a6cff;
+  --hazard-red:    #ff5d5d;
+  --hazard-red-d:  #e23b3b;
+  --bio-green:     #2fd07a;
+  --bio-green-d:   #1ba75f;
+  --star-amber:    #f5a623;
+}
+
+/* ============================================================
+   DARK THEME (default)
+   ============================================================ */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --surface-base:    var(--void-950);   /* page background */
+  --surface-sunken:  var(--void-900);   /* wells, code blocks */
+  --surface-card:    var(--void-850);   /* cards, panels */
+  --surface-raised:  var(--void-800);   /* popovers, dropdowns */
+  --surface-overlay: var(--void-750);   /* hovered rows, inputs */
+  --surface-inverse: var(--void-50);
+
+  /* Text */
+  --text-strong:    #f1f5fb;
+  --text-body:      #c5cfe0;
+  --text-muted:     #8a98b3;
+  --text-faint:     #5b6a84;
+  --text-on-accent: #06231f;
+  --text-inverse:   #131a26;
+
+  /* Borders / lines */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-soft:   rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-accent: var(--cyan-500);
+
+  /* Accents */
+  --accent:         var(--cyan-400);
+  --accent-hover:   var(--cyan-300);
+  --accent-press:   var(--cyan-500);
+  --accent-soft:    rgba(41, 198, 192, 0.14);
+  --accent-on:      #06231f;          /* text on accent fills */
+  --accent-2:       var(--amber-400);
+  --accent-2-hover: var(--amber-300);
+  --accent-2-soft:  rgba(245, 166, 35, 0.15);
+
+  /* Semantic */
+  --info:         var(--plasma-blue);
+  --info-soft:    rgba(77, 141, 255, 0.15);
+  --success:      var(--bio-green);
+  --success-soft: rgba(47, 208, 122, 0.14);
+  --warning:      var(--star-amber);
+  --warning-soft: rgba(245, 166, 35, 0.15);
+  --danger:       var(--hazard-red);
+  --danger-soft:  rgba(255, 93, 93, 0.14);
+
+  /* Focus ring */
+  --focus-ring: rgba(77, 217, 211, 0.55);
+
+  /* Decorative */
+  --grid-line: rgba(120, 180, 200, 0.05); /* @kind color */
+  --starfield: 255, 255, 255; /* @kind other */
+}
+
+/* ============================================================
+   LIGHT THEME
+   ============================================================ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --surface-base:    var(--void-25);
+  --surface-sunken:  var(--void-50);
+  --surface-card:    var(--white);
+  --surface-raised:  var(--white);
+  --surface-overlay: var(--void-50);
+  --surface-inverse: var(--void-900);
+
+  --text-strong:    #0d1422;
+  --text-body:      #2c374b;
+  --text-muted:     #5a6980;
+  --text-faint:     #8694ac;
+  --text-on-accent: #ffffff;
+  --text-inverse:   #f1f5fb;
+
+  --border-subtle: rgba(13, 30, 55, 0.07);
+  --border-soft:   rgba(13, 30, 55, 0.12);
+  --border-strong: rgba(13, 30, 55, 0.20);
+  --border-accent: var(--cyan-500);
+
+  --accent:         var(--cyan-600);
+  --accent-hover:   var(--cyan-500);
+  --accent-press:   var(--cyan-700);
+  --accent-soft:    rgba(15, 135, 131, 0.12);
+  --accent-on:      #ffffff;
+  --accent-2:       var(--amber-500);
+  --accent-2-hover: var(--amber-400);
+  --accent-2-soft:  rgba(216, 135, 15, 0.14);
+
+  --info:         var(--plasma-blue-d);
+  --info-soft:    rgba(47, 111, 224, 0.12);
+  --success:      var(--bio-green-d);
+  --success-soft: rgba(27, 167, 95, 0.12);
+  --warning:      var(--amber-600);
+  --warning-soft: rgba(173, 106, 10, 0.13);
+  --danger:       var(--hazard-red-d);
+  --danger-soft:  rgba(226, 59, 59, 0.10);
+
+  --focus-ring: rgba(15, 135, 131, 0.40);
+
+  --grid-line: rgba(20, 60, 90, 0.06); /* @kind color */
+  --starfield: 20, 40, 70; /* @kind other */
+}

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { Civic, CivicModifier } from "../types";
+import type { Civic, CivicModifier, ModProject } from "../types";
 import {
   AUTHORITIES,
   ETHICS,
@@ -7,20 +7,42 @@ import {
   interpret,
   isMultiplier,
 } from "../lib/modifiers";
-import { toKey } from "../lib/pdxExport";
+import {
+  toKey,
+  normalizePrefix,
+  effectiveCivicKey,
+} from "../lib/pdxExport";
+import {
+  Card,
+  Input,
+  Textarea,
+  Switch,
+  Tag,
+  Button,
+  IconButton,
+  Icon,
+} from "../ds";
 import ModifierPicker from "./ModifierPicker";
 
 interface Props {
+  project: ModProject;
   civic: Civic;
   onChange: (civic: Civic) => void;
   onDelete: () => void;
 }
 
-export default function CivicEditor({ civic, onChange, onDelete }: Props) {
+export default function CivicEditor({
+  project,
+  civic,
+  onChange,
+  onDelete,
+}: Props) {
   const [picking, setPicking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const patch = (p: Partial<Civic>) => onChange({ ...civic, ...p });
+  const hasPrefix = !!normalizePrefix(project.idPrefix);
+  const finalKey = effectiveCivicKey(project, civic);
 
   const setName = (name: string) =>
     patch({ name, key: toKey("civic_", name) });
@@ -51,9 +73,12 @@ export default function CivicEditor({ civic, onChange, onDelete }: Props) {
 
   const addModifier = (key: string) => {
     if (civic.modifiers.some((m) => m.key === key)) return;
-    const def = MODIFIER_BY_KEY.get(key);
-    const value = def && isMultiplier(key) ? 0.1 : 1;
-    patch({ modifiers: [...civic.modifiers, { key, value }] });
+    patch({
+      modifiers: [
+        ...civic.modifiers,
+        { key, value: isMultiplier(key) ? 0.1 : 1 },
+      ],
+    });
   };
 
   const updateModifier = (key: string, value: number) =>
@@ -77,159 +102,229 @@ export default function CivicEditor({ civic, onChange, onDelete }: Props) {
 
   return (
     <div className="editor">
-      {/* Identity */}
-      <div className="card">
-        <p className="section-title">Civic identity</p>
-        <div className="row">
-          <div className="field">
-            <label className="lbl">Name</label>
-            <input
-              className="txt"
-              value={civic.name}
-              placeholder="e.g. Star-Forged Artisans"
-              onChange={(e) => setName(e.target.value)}
-            />
-            <div className="hint">
-              Script key: <code>{civic.key}</code>
-            </div>
-          </div>
+      <div className="editor__head">
+        <div style={{ flex: 1 }}>
+          <p className="smu-eyebrow">// CIVIC</p>
+          <h1>{civic.name || "Untitled civic"}</h1>
         </div>
-        <div className="field">
-          <label className="lbl">Description (Effects text)</label>
-          <textarea
-            className="txt"
+      </div>
+
+      {/* Identity */}
+      <Card padded>
+        <div className="stack">
+          <Input
+            label="Name"
+            value={civic.name}
+            placeholder="e.g. Star-Forged Artisans"
+            onChange={(e) => setName(e.target.value)}
+            hint={
+              <>
+                Exported id:{" "}
+                <code style={{ color: "var(--accent)" }}>{finalKey}</code>
+              </>
+            }
+          />
+
+          <Textarea
+            label="Description"
             value={civic.description}
             placeholder="Describe what this civic does, in your own words."
             onChange={(e) => patch({ description: e.target.value })}
           />
-        </div>
-        <div className="field">
-          <label className="lbl">Icon</label>
-          <div className="icon-upload">
-            <img
-              className="icon-preview"
-              src={civic.iconDataUrl ?? undefined}
-              alt=""
-            />
-            <div>
-              <button
-                className="btn sm"
-                onClick={() => fileRef.current?.click()}
-              >
-                {civic.iconDataUrl ? "Replace image" : "Upload image"}
-              </button>
-              {civic.iconDataUrl && (
-                <button
-                  className="btn sm ghost danger"
-                  style={{ marginLeft: 8 }}
-                  onClick={() => patch({ iconDataUrl: null })}
-                >
-                  Remove
-                </button>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => onIconFile(e.target.files?.[0])}
+
+          <div>
+            <div className="smu-eyebrow" style={{ marginBottom: 8 }}>
+              Icon
+            </div>
+            <div className="icon-upload">
+              <img
+                className="icon-preview"
+                src={civic.iconDataUrl ?? undefined}
+                alt=""
               />
-              <div className="hint">
-                PNG/JPG — converted to a 128×128 .dds and wired to{" "}
-                <code>{civic.key}</code> on export.
+              <div className="stack" style={{ gap: "var(--space-2)" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leadingIcon={<Icon name="Upload" size={15} />}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    {civic.iconDataUrl ? "Replace image" : "Upload image"}
+                  </Button>
+                  {civic.iconDataUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => patch({ iconDataUrl: null })}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <span
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  PNG/JPG — converted to a 128×128 .dds on export.
+                </span>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => onIconFile(e.target.files?.[0])}
+                />
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Modifiers */}
-      <div className="card">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
-          <p className="section-title" style={{ margin: 0 }}>
-            Modifiers ({civic.modifiers.length})
-          </p>
-          <span style={{ flex: 1 }} />
-          <button className="btn primary sm" onClick={() => setPicking(true)}>
-            + Add modifier
-          </button>
+      <Card padded>
+        <div className="section-bar">
+          <h2>Modifiers</h2>
+          <span
+            className="smu-eyebrow"
+            style={{ color: "var(--text-faint)" }}
+          >
+            {civic.modifiers.length}
+          </span>
+          <span className="spacer" />
+          <Button
+            variant="primary"
+            size="sm"
+            leadingIcon={<Icon name="Plus" size={15} />}
+            onClick={() => setPicking(true)}
+          >
+            Add modifier
+          </Button>
         </div>
 
         {civic.modifiers.length === 0 ? (
           <div className="empty">
-            No modifiers yet. Click <strong>Add modifier</strong> to browse all{" "}
-            {MODIFIER_BY_KEY.size} country effects.
+            No modifiers yet. Add one to browse all{" "}
+            {MODIFIER_BY_KEY.size.toLocaleString()} country effects.
           </div>
         ) : (
-          civic.modifiers.map((m) => (
-            <ModifierRow
-              key={m.key}
-              mod={m}
-              onChange={(v) => updateModifier(m.key, v)}
-              onRemove={() => removeModifier(m.key)}
-            />
-          ))
+          <div className="stack" style={{ gap: "var(--space-2)" }}>
+            {civic.modifiers.map((m) => (
+              <ModifierRow
+                key={m.key}
+                mod={m}
+                onChange={(v) => updateModifier(m.key, v)}
+                onRemove={() => removeModifier(m.key)}
+              />
+            ))}
+          </div>
         )}
-      </div>
+      </Card>
 
       {/* Requirements */}
-      <div className="card">
-        <p className="section-title">Requirements (optional)</p>
-        <div className="field">
-          <label className="lbl">
-            Required ethics — empire must have all selected
-          </label>
-          <div className="chips">
-            {ETHICS.map((e) => (
-              <span
-                key={e.key}
-                className={`chip ${
-                  civic.requirements.ethics.includes(e.key) ? "on" : ""
-                }`}
-                onClick={() => toggleEthic(e.key)}
-              >
-                {e.name}
-              </span>
-            ))}
+      <Card padded>
+        <div className="section-bar">
+          <h2>Requirements</h2>
+          <span
+            className="smu-eyebrow"
+            style={{ color: "var(--text-faint)" }}
+          >
+            optional
+          </span>
+        </div>
+        <div className="stack">
+          <div>
+            <label className="smu-eyebrow" style={{ display: "block", marginBottom: 8 }}>
+              Required ethics — empire must have all selected
+            </label>
+            <div className="picker-cats" style={{ maxHeight: "none", margin: 0 }}>
+              {ETHICS.map((e) => (
+                <Tag
+                  key={e.key}
+                  selected={civic.requirements.ethics.includes(e.key)}
+                  onClick={() => toggleEthic(e.key)}
+                >
+                  {e.name}
+                </Tag>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="smu-eyebrow" style={{ display: "block", marginBottom: 8 }}>
+              Allowed authorities — one of (none = any)
+            </label>
+            <div className="picker-cats" style={{ maxHeight: "none", margin: 0 }}>
+              {AUTHORITIES.map((a) => (
+                <Tag
+                  key={a.key}
+                  selected={civic.requirements.authorities.includes(a.key)}
+                  onClick={() => toggleAuthority(a.key)}
+                >
+                  {a.name}
+                </Tag>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="field">
-          <label className="lbl">
-            Allowed authorities — empire must be one of (none = any)
-          </label>
-          <div className="chips">
-            {AUTHORITIES.map((a) => (
-              <span
-                key={a.key}
-                className={`chip ${
-                  civic.requirements.authorities.includes(a.key) ? "on" : ""
-                }`}
-                onClick={() => toggleAuthority(a.key)}
-              >
-                {a.name}
-              </span>
-            ))}
-          </div>
+      </Card>
+
+      {/* Advanced */}
+      <Card padded>
+        <div className="section-bar">
+          <h2>Advanced</h2>
         </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "var(--space-4)",
+          }}
+        >
+          <div>
+            <div style={{ color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>
+              Apply mod id prefix
+            </div>
+            <div
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "var(--text-muted)",
+                marginTop: 2,
+                maxWidth: 460,
+              }}
+            >
+              {hasPrefix
+                ? "Turn off to use the raw id (e.g. to override a base-game civic of the same name)."
+                : "Set an id prefix in Mod settings to enable namespacing."}
+            </div>
+          </div>
+          <Switch
+            checked={!civic.noPrefix}
+            disabled={!hasPrefix}
+            onChange={(e) => patch({ noPrefix: !e.target.checked })}
+          />
+        </div>
+      </Card>
+
+      <div>
+        <Button
+          variant="danger"
+          size="sm"
+          leadingIcon={<Icon name="Trash2" size={15} />}
+          onClick={onDelete}
+        >
+          Delete civic
+        </Button>
       </div>
 
-      <button className="btn ghost danger" onClick={onDelete}>
-        Delete this civic
-      </button>
-
-      {picking && (
-        <ModifierPicker
-          added={addedKeys}
-          onAdd={addModifier}
-          onClose={() => setPicking(false)}
-        />
-      )}
+      <ModifierPicker
+        open={picking}
+        added={addedKeys}
+        onAdd={addModifier}
+        onClose={() => setPicking(false)}
+      />
     </div>
   );
 }
@@ -245,24 +340,27 @@ function ModifierRow({
 }) {
   const def = MODIFIER_BY_KEY.get(mod.key);
   const interpretation = interpret(mod.key, mod.value);
-  const cls = mod.value > 0 ? "pos" : mod.value < 0 ? "neg" : "";
+  const cls =
+    mod.value > 0 ? "mod-row__interp--pos" : mod.value < 0 ? "mod-row__interp--neg" : "";
   return (
     <div className="mod-row">
-      <div className="mod-name">
+      <div className="mod-row__name">
         <div className="t">{def?.name ?? mod.key}</div>
         <div className="k">{mod.key}</div>
       </div>
-      <span className={`interp ${cls}`}>{interpretation}</span>
-      <input
-        className="val"
+      <span className={`mod-row__interp ${cls}`}>{interpretation}</span>
+      <Input
+        className="mod-row__val"
+        size="sm"
+        mono
         type="number"
         step={isMultiplier(mod.key) ? 0.05 : 1}
         value={mod.value}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
       />
-      <button className="btn sm ghost danger" onClick={onRemove}>
-        ✕
-      </button>
+      <IconButton size="sm" label="Remove modifier" onClick={onRemove}>
+        <Icon name="Trash2" size={15} />
+      </IconButton>
     </div>
   );
 }

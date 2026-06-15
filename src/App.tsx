@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
 import type { Civic, ModProject } from "./types";
+import TopBar from "./components/TopBar";
+import Sidebar, { type SidebarTab } from "./components/Sidebar";
+import ModSettingsDialog from "./components/ModSettingsDialog";
 import CivicEditor from "./components/CivicEditor";
+import { Button, Icon } from "./ds";
+import { OBJECT_TYPES } from "./objectTypes";
 import { downloadModZip } from "./lib/zip";
 import { toKey } from "./lib/pdxExport";
 
-const STORAGE_KEY = "civic-forge-project-v1";
+const STORAGE_KEY = "civic-forge-project-v2";
+const PREFS_KEY = "civic-forge-prefs-v1";
 
 function newCivic(index: number): Civic {
   const name = `New Civic ${index}`;
   return {
     id: crypto.randomUUID(),
     key: toKey("civic_", name),
+    noPrefix: false,
     name,
     description: "",
     modifiers: [],
@@ -25,16 +32,25 @@ function defaultProject(): ModProject {
     author: "",
     version: "0.1.0",
     supportedVersion: "4.0.*",
+    idPrefix: "",
     civics: [newCivic(1)],
   };
 }
 
+/** Load + normalize a stored project, filling in fields added since v1. */
 function loadProject(): ModProject {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const p = JSON.parse(raw) as ModProject;
-      if (p.civics?.length) return p;
+      const p = JSON.parse(raw) as Partial<ModProject>;
+      if (p.civics?.length) {
+        return {
+          ...defaultProject(),
+          ...p,
+          idPrefix: p.idPrefix ?? "",
+          civics: p.civics.map((c) => ({ ...c, noPrefix: c.noPrefix ?? false })),
+        } as ModProject;
+      }
     }
   } catch {
     /* ignore corrupt storage */
@@ -42,11 +58,28 @@ function loadProject(): ModProject {
   return defaultProject();
 }
 
+interface Prefs {
+  theme: "dark" | "light";
+  collapsed: boolean;
+}
+
+function loadPrefs(): Prefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) return { theme: "dark", collapsed: false, ...JSON.parse(raw) };
+  } catch {
+    /* ignore */
+  }
+  return { theme: "dark", collapsed: false };
+}
+
 export default function App() {
   const [project, setProject] = useState<ModProject>(loadProject);
-  const [activeId, setActiveId] = useState<string>(
-    () => project.civics[0]?.id ?? "",
-  );
+  const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
+  const [activeType, setActiveType] = useState("civic");
+  const [tab, setTab] = useState<SidebarTab>("types");
+  const [activeId, setActiveId] = useState(() => project.civics[0]?.id ?? "");
+  const [settingsOpen, setSettingsOpen] = useState(true); // opens on load
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -55,8 +88,13 @@ export default function App() {
   }, [project]);
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", prefs.theme);
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  }, [prefs]);
+
+  useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2600);
+    const t = setTimeout(() => setToast(null), 2800);
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -73,6 +111,7 @@ export default function App() {
     setProject((p) => {
       const civic = newCivic(p.civics.length + 1);
       setActiveId(civic.id);
+      setTab("inventory");
       return { ...p, civics: [...p.civics, civic] };
     });
 
@@ -83,6 +122,11 @@ export default function App() {
       setActiveId(next[0].id);
       return { ...p, civics: next };
     });
+
+  const selectType = (id: string) => {
+    setActiveType(id);
+    setTab("inventory");
+  };
 
   const exportMod = async () => {
     setExporting(true);
@@ -101,113 +145,89 @@ export default function App() {
     (n, c) => n + c.modifiers.length,
     0,
   );
+  const activeTypeDef = OBJECT_TYPES.find((t) => t.id === activeType);
 
   return (
     <div className="app">
-      <header className="topbar">
-        <h1>
-          <span className="glyph">✦</span> Stellaris Civic Forge
-        </h1>
-        <span className="spacer" />
-        <span style={{ color: "var(--text-dim)", fontSize: 12 }}>
-          {project.civics.length} civic{project.civics.length !== 1 && "s"} ·{" "}
-          {totalModifiers} modifier{totalModifiers !== 1 && "s"}
-        </span>
-        <button
-          className="btn primary"
-          onClick={exportMod}
-          disabled={exporting}
-        >
-          {exporting ? "Building…" : "⬇ Export mod (.zip)"}
-        </button>
-      </header>
+      <TopBar
+        theme={prefs.theme}
+        onToggleTheme={() =>
+          setPrefs((p) => ({
+            ...p,
+            theme: p.theme === "dark" ? "light" : "dark",
+          }))
+        }
+        onOpenSettings={() => setSettingsOpen(true)}
+        onExport={exportMod}
+        exporting={exporting}
+        summary={`${project.civics.length} civics · ${totalModifiers} modifiers`}
+      />
 
-      <div className="layout">
-        <aside className="sidebar">
-          <div className="sidebar-scroll">
-            <p className="section-title">Mod settings</p>
-            <div className="field">
-              <label className="lbl">Mod name</label>
-              <input
-                className="txt"
-                value={project.modName}
-                onChange={(e) =>
-                  setProject({ ...project, modName: e.target.value })
-                }
-              />
-            </div>
-            <div className="row" style={{ marginBottom: 16 }}>
-              <div>
-                <label className="lbl">Version</label>
-                <input
-                  className="txt"
-                  value={project.version}
-                  onChange={(e) =>
-                    setProject({ ...project, version: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="lbl">Game version</label>
-                <input
-                  className="txt"
-                  value={project.supportedVersion}
-                  onChange={(e) =>
-                    setProject({
-                      ...project,
-                      supportedVersion: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <p className="section-title" style={{ margin: 0 }}>
-                Civics
-              </p>
-              <span style={{ flex: 1 }} />
-              <button className="btn sm" onClick={addCivic}>
-                + New
-              </button>
-            </div>
-            <ul className="civic-list">
-              {project.civics.map((c) => (
-                <li
-                  key={c.id}
-                  className={c.id === active?.id ? "active" : ""}
-                  onClick={() => setActiveId(c.id)}
-                >
-                  <img className="ico" src={c.iconDataUrl ?? undefined} alt="" />
-                  <div className="meta">
-                    <div className="name">{c.name || "(unnamed)"}</div>
-                    <div className="sub">{c.modifiers.length} modifiers</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
+      <div className="body">
+        <Sidebar
+          collapsed={prefs.collapsed}
+          onToggleCollapse={() =>
+            setPrefs((p) => ({ ...p, collapsed: !p.collapsed }))
+          }
+          tab={tab}
+          onTabChange={setTab}
+          activeType={activeType}
+          onSelectType={selectType}
+          civics={project.civics}
+          activeCivicId={active?.id ?? ""}
+          onSelectCivic={setActiveId}
+          onAddCivic={addCivic}
+        />
 
         <main className="main">
-          {active && (
+          {activeTypeDef?.available && active ? (
             <CivicEditor
               key={active.id}
+              project={project}
               civic={active}
               onChange={updateCivic}
               onDelete={() => deleteCivic(active.id)}
             />
+          ) : (
+            <div className="empty-screen">
+              <div className="empty-screen__inner">
+                <div className="empty-screen__orb">
+                  <Icon name="Boxes" size={34} />
+                </div>
+                <h1 style={{ fontSize: "var(--text-xl)" }}>
+                  Pick an object type
+                </h1>
+                <p style={{ color: "var(--text-muted)" }}>
+                  Choose what to build from the sidebar. Civics are ready now.
+                </p>
+                <Button
+                  variant="secondary"
+                  leadingIcon={<Icon name="Plus" size={16} />}
+                  onClick={addCivic}
+                >
+                  New civic
+                </Button>
+              </div>
+            </div>
           )}
         </main>
       </div>
 
-      {toast && <div className="toast">{toast}</div>}
+      <ModSettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        project={project}
+        onChange={setProject}
+      />
+
+      {toast && (
+        <div className="toast">
+          <span className="toast__icon">
+            <Icon name="Sparkles" size={16} />
+          </span>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

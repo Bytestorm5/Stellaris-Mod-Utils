@@ -1,12 +1,28 @@
-# Stellaris Civic Forge
+# Stellaris Modding Utilities
 
-A user-friendly, browser-based builder for **Stellaris civics**. Discover and
-set country modifiers without memorizing script keys, write your name and
-description, drop in an icon, and export a **ready-to-install mod `.zip`** with
-the localisation, gfx, and modifier setup all wired up for you.
+A user-friendly, browser-based suite for building **Stellaris** mod content,
+starting with **civics**. Discover and set country modifiers without memorizing
+script keys, write your name and description, drop in an icon, and export a
+**ready-to-install mod `.zip`** with the localisation, gfx, and modifier setup
+all wired up for you.
 
 Everything runs client-side — no backend, no uploads. Your work is saved in
-your browser automatically.
+your browser automatically. The UI is built on the SMU design system (dark +
+light themes, vendored under `src/ds/`).
+
+## App structure
+
+- **Top bar** — brand, project summary, theme toggle, **Mod settings**, and
+  **Export mod**.
+- **Mod settings** (modal, opens on first load) — name, version, supported game
+  version, author, and an optional **id prefix** that is prepended to every
+  object's internal id (e.g. `smu_civic_…`) to avoid collisions with other mods
+  or base-game content. Each object can opt out of the prefix individually (its
+  "Advanced" section) when you intend to override a base-game object.
+- **Sidebar** (collapsible, open by default) — a tabbed switcher:
+  - **Types** — the kinds of objects you can build (civics now; traits and
+    origins are stubbed for the future). Picking a type jumps to…
+  - **Inventory** — the objects of the selected type, plus **New**.
 
 ## What it does
 
@@ -66,13 +82,18 @@ copyrighted); only the curated JSON it produces is. The extractor reads:
 | Path | Purpose |
 | --- | --- |
 | `scripts/extract-data.mjs` | Builds `src/data/*.json` from a game dump |
+| `src/ds/` | Vendored SMU design system: tokens (`styles.css`) + typed React primitives |
+| `src/objectTypes.ts` | Registry of buildable object kinds (civics, future types) |
 | `src/lib/modifiers.ts` | Loads data, categories, value interpretation |
-| `src/lib/pdxExport.ts` | Generates civic `.txt`, localisation `.yml`, descriptor |
+| `src/lib/pdxExport.ts` | Civic `.txt` / `.yml` / descriptor generation + id-prefix logic |
 | `src/lib/dds.ts` | PNG/JPG → uncompressed `.dds` encoder |
 | `src/lib/zip.ts` | Assembles the downloadable mod `.zip` (JSZip) |
+| `src/components/TopBar.tsx` | Brand, theme toggle, settings + export actions |
+| `src/components/Sidebar.tsx` | Collapsible Types/Inventory navigation |
+| `src/components/ModSettingsDialog.tsx` | Mod metadata + id prefix |
 | `src/components/ModifierPicker.tsx` | Searchable modifier browser |
 | `src/components/CivicEditor.tsx` | The civic editing form |
-| `src/App.tsx` | Project state, sidebar, export |
+| `src/App.tsx` | Project state, theme, layout, export |
 
 ## Roadmap
 

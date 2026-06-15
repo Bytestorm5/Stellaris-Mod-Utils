@@ -27,8 +27,10 @@ export interface Requirements {
 export interface Civic {
   /** Stable internal id for UI list rendering (not exported). */
   id: string;
-  /** Script key, e.g. `civic_my_glorious_people`, derived from the name. */
+  /** Base script key derived from the name, e.g. `civic_my_glorious_people`. */
   key: string;
+  /** When true, the mod-wide id prefix is NOT applied (for overriding base-game objects). */
+  noPrefix: boolean;
   /** Display name shown in-game. */
   name: string;
   /** Description shown under the Effects heading. */
@@ -46,5 +48,11 @@ export interface ModProject {
   author: string;
   version: string;
   supportedVersion: string;
+  /**
+   * Optional namespace applied to every object's internal id to avoid
+   * collisions with other mods or base-game content (e.g. `smu`). Objects can
+   * opt out individually via `noPrefix`.
+   */
+  idPrefix: string;
   civics: Civic[];
 }

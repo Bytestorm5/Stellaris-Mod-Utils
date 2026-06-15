@@ -1,0 +1,49 @@
+/* ============================================================
+   SPACING & LAYOUT — Stellaris Modding Utilities
+   4px base grid.
+   ============================================================ */
+
+:root {
+  /* Spacing scale (4px base) */
+  --space-0:   0;
+  --space-1:   0.25rem;  /* 4px  */
+  --space-2:   0.5rem;   /* 8px  */
+  --space-3:   0.75rem;  /* 12px */
+  --space-4:   1rem;     /* 16px */
+  --space-5:   1.5rem;   /* 24px */
+  --space-6:   2rem;     /* 32px */
+  --space-7:   2.5rem;   /* 40px */
+  --space-8:   3rem;     /* 48px */
+  --space-9:   4rem;     /* 64px */
+  --space-10:  5rem;     /* 80px */
+  --space-12:  6rem;     /* 96px */
+
+  /* Radii */
+  --radius-xs:   3px;
+  --radius-sm:   5px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  22px;
+  --radius-pill: 999px;
+
+  /* Container widths */
+  --container-sm: 640px;
+  --container-md: 880px;
+  --container-lg: 1140px;
+  --container-xl: 1320px;
+
+  /* Control heights */
+  --control-sm: 30px;
+  --control-md: 38px;
+  --control-lg: 46px;
+
+  /* Z-index ladder */
+  --z-base:     0;     /* @kind other */
+  --z-raised:   10;    /* @kind other */
+  --z-sticky:   100;   /* @kind other */
+  --z-overlay:  1000;  /* @kind other */
+  --z-modal:    1100;  /* @kind other */
+  --z-toast:    1200;  /* @kind other */
+  --z-tooltip:  1300;  /* @kind other */
+}

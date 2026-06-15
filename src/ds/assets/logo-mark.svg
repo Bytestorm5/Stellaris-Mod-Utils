@@ -1,0 +1,13 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stellaris Modding Utilities mark">
+  <path d="M24 3.5 41.7 13.75 V34.25 L24 44.5 6.3 34.25 V13.75 Z" stroke="#7d8da8" stroke-width="1.6" stroke-linejoin="round" opacity="0.6" fill="none"></path>
+  <ellipse cx="24" cy="24" rx="15" ry="6.2" stroke="#29c6c0" stroke-width="1.8" transform="rotate(-28 24 24)" fill="none"></ellipse>
+  <circle cx="24" cy="24" r="5.4" fill="#29c6c0"></circle>
+  <circle cx="24" cy="24" r="5.4" fill="url(#smu_core)"></circle>
+  <path d="M37 16.2 L38.1 19 L41 20.1 L38.1 21.2 L37 24 L35.9 21.2 L33 20.1 L35.9 19 Z" fill="#f5a623"></path>
+  <defs>
+    <radialGradient id="smu_core" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"></stop>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop>
+    </radialGradient>
+  </defs>
+</svg>
