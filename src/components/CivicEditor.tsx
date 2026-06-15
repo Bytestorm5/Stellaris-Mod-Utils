@@ -1,28 +1,12 @@
 import { useRef, useState } from "react";
-import type { Civic, CivicModifier, ModProject } from "../types";
-import {
-  AUTHORITIES,
-  ETHICS,
-  MODIFIER_BY_KEY,
-  interpret,
-  isMultiplier,
-} from "../lib/modifiers";
-import {
-  toKey,
-  normalizePrefix,
-  effectiveCivicKey,
-} from "../lib/pdxExport";
-import {
-  Card,
-  Input,
-  Textarea,
-  Switch,
-  Tag,
-  Button,
-  IconButton,
-  Icon,
-} from "../ds";
+import type { Civic, CivicModifier, CondNode, ModProject } from "../types";
+import { MODIFIER_BY_KEY, interpret, isMultiplier } from "../lib/modifiers";
+import { toKey, normalizePrefix, effectiveCivicKey } from "../lib/pdxExport";
+import { Card, Input, Textarea, Switch, Button, IconButton, Icon } from "../ds";
 import ModifierPicker from "./ModifierPicker";
+import ConditionBuilder from "./conditions/ConditionBuilder";
+import EthicsAuthorityWizard from "./EthicsAuthorityWizard";
+import AiWeightEditor from "./AiWeightEditor";
 
 interface Props {
   project: ModProject;
@@ -31,6 +15,8 @@ interface Props {
   onDelete: () => void;
 }
 
+const COUNTRY = "country";
+
 export default function CivicEditor({
   project,
   civic,
@@ -38,6 +24,9 @@ export default function CivicEditor({
   onDelete,
 }: Props) {
   const [picking, setPicking] = useState(false);
+  const [wizardBlock, setWizardBlock] = useState<"potential" | "possible" | null>(
+    null,
+  );
   const fileRef = useRef<HTMLInputElement>(null);
 
   const patch = (p: Partial<Civic>) => onChange({ ...civic, ...p });
@@ -46,30 +35,6 @@ export default function CivicEditor({
 
   const setName = (name: string) =>
     patch({ name, key: toKey("civic_", name) });
-
-  const toggleEthic = (key: string) => {
-    const has = civic.requirements.ethics.includes(key);
-    patch({
-      requirements: {
-        ...civic.requirements,
-        ethics: has
-          ? civic.requirements.ethics.filter((e) => e !== key)
-          : [...civic.requirements.ethics, key],
-      },
-    });
-  };
-
-  const toggleAuthority = (key: string) => {
-    const has = civic.requirements.authorities.includes(key);
-    patch({
-      requirements: {
-        ...civic.requirements,
-        authorities: has
-          ? civic.requirements.authorities.filter((a) => a !== key)
-          : [...civic.requirements.authorities, key],
-      },
-    });
-  };
 
   const addModifier = (key: string) => {
     if (civic.modifiers.some((m) => m.key === key)) return;
@@ -80,14 +45,12 @@ export default function CivicEditor({
       ],
     });
   };
-
   const updateModifier = (key: string, value: number) =>
     patch({
       modifiers: civic.modifiers.map((m) =>
         m.key === key ? { ...m, value } : m,
       ),
     });
-
   const removeModifier = (key: string) =>
     patch({ modifiers: civic.modifiers.filter((m) => m.key !== key) });
 
@@ -99,6 +62,8 @@ export default function CivicEditor({
   };
 
   const addedKeys = new Set(civic.modifiers.map((m) => m.key));
+  const wizardNodes: CondNode[] =
+    wizardBlock === "potential" ? civic.potential : civic.possible;
 
   return (
     <div className="editor">
@@ -124,14 +89,12 @@ export default function CivicEditor({
               </>
             }
           />
-
           <Textarea
             label="Description"
             value={civic.description}
             placeholder="Describe what this civic does, in your own words."
             onChange={(e) => patch({ description: e.target.value })}
           />
-
           <div>
             <div className="smu-eyebrow" style={{ marginBottom: 8 }}>
               Icon
@@ -162,12 +125,7 @@ export default function CivicEditor({
                     </Button>
                   )}
                 </div>
-                <span
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "var(--text-muted)",
-                  }}
-                >
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
                   PNG/JPG — converted to a 128×128 .dds on export.
                 </span>
                 <input
@@ -187,10 +145,7 @@ export default function CivicEditor({
       <Card padded>
         <div className="section-bar">
           <h2>Modifiers</h2>
-          <span
-            className="smu-eyebrow"
-            style={{ color: "var(--text-faint)" }}
-          >
+          <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
             {civic.modifiers.length}
           </span>
           <span className="spacer" />
@@ -203,7 +158,6 @@ export default function CivicEditor({
             Add modifier
           </Button>
         </div>
-
         {civic.modifiers.length === 0 ? (
           <div className="empty">
             No modifiers yet. Add one to browse all{" "}
@@ -223,51 +177,50 @@ export default function CivicEditor({
         )}
       </Card>
 
-      {/* Requirements */}
+      {/* Potential */}
       <Card padded>
         <div className="section-bar">
-          <h2>Requirements</h2>
-          <span
-            className="smu-eyebrow"
-            style={{ color: "var(--text-faint)" }}
-          >
-            optional
+          <h2>Potential</h2>
+          <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
+            shown when true
           </span>
         </div>
-        <div className="stack">
-          <div>
-            <label className="smu-eyebrow" style={{ display: "block", marginBottom: 8 }}>
-              Required ethics — empire must have all selected
-            </label>
-            <div className="picker-cats" style={{ maxHeight: "none", margin: 0 }}>
-              {ETHICS.map((e) => (
-                <Tag
-                  key={e.key}
-                  selected={civic.requirements.ethics.includes(e.key)}
-                  onClick={() => toggleEthic(e.key)}
-                >
-                  {e.name}
-                </Tag>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="smu-eyebrow" style={{ display: "block", marginBottom: 8 }}>
-              Allowed authorities — one of (none = any)
-            </label>
-            <div className="picker-cats" style={{ maxHeight: "none", margin: 0 }}>
-              {AUTHORITIES.map((a) => (
-                <Tag
-                  key={a.key}
-                  selected={civic.requirements.authorities.includes(a.key)}
-                  onClick={() => toggleAuthority(a.key)}
-                >
-                  {a.name}
-                </Tag>
-              ))}
-            </div>
-          </div>
+        <ConditionBuilder
+          nodes={civic.potential}
+          scope={COUNTRY}
+          onChange={(potential) => patch({ potential })}
+          onOpenWizard={() => setWizardBlock("potential")}
+        />
+      </Card>
+
+      {/* Possible */}
+      <Card padded>
+        <div className="section-bar">
+          <h2>Possible</h2>
+          <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
+            selectable when true
+          </span>
         </div>
+        <ConditionBuilder
+          nodes={civic.possible}
+          scope={COUNTRY}
+          onChange={(possible) => patch({ possible })}
+          onOpenWizard={() => setWizardBlock("possible")}
+        />
+      </Card>
+
+      {/* AI weight */}
+      <Card padded>
+        <div className="section-bar">
+          <h2>AI weight</h2>
+          <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
+            how the AI values this civic
+          </span>
+        </div>
+        <AiWeightEditor
+          value={civic.aiWeight}
+          onChange={(aiWeight) => patch({ aiWeight })}
+        />
       </Card>
 
       {/* Advanced */}
@@ -325,6 +278,16 @@ export default function CivicEditor({
         onAdd={addModifier}
         onClose={() => setPicking(false)}
       />
+
+      <EthicsAuthorityWizard
+        open={wizardBlock !== null}
+        block={wizardBlock ?? "possible"}
+        nodes={wizardNodes}
+        onApply={(nodes) =>
+          patch(wizardBlock === "potential" ? { potential: nodes } : { possible: nodes })
+        }
+        onClose={() => setWizardBlock(null)}
+      />
     </div>
   );
 }
@@ -341,7 +304,11 @@ function ModifierRow({
   const def = MODIFIER_BY_KEY.get(mod.key);
   const interpretation = interpret(mod.key, mod.value);
   const cls =
-    mod.value > 0 ? "mod-row__interp--pos" : mod.value < 0 ? "mod-row__interp--neg" : "";
+    mod.value > 0
+      ? "mod-row__interp--pos"
+      : mod.value < 0
+        ? "mod-row__interp--neg"
+        : "";
   return (
     <div className="mod-row">
       <div className="mod-row__name">

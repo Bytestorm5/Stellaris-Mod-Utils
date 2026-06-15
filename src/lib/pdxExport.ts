@@ -1,6 +1,7 @@
 // Generates Paradox-script and localisation text for a civic mod project.
 
-import type { Civic, ModProject } from "../types";
+import type { AiWeight, Civic, ModProject } from "../types";
+import { serializeNodes } from "./conditions";
 
 /** Sanitize a free-form name into a valid lowercase script key. */
 export function toKey(prefix: string, name: string): string {
@@ -46,43 +47,53 @@ export function descKey(civicKey: string): string {
   return `${civicKey}_desc`;
 }
 
-/** Render the `possible = { ... }` requirement block, or "" if unrestricted. */
-function renderRequirements(civic: Civic): string {
-  const { ethics, authorities } = civic.requirements;
-  const lines: string[] = [];
+/** Render a named condition block (`potential`/`possible`), or "" if empty. */
+function renderCondBlock(name: string, nodes: Civic["possible"]): string {
+  if (!nodes || nodes.length === 0) return "";
+  return `\t${name} = {\n${serializeNodes(nodes, 2)}\n\t}\n`;
+}
 
-  if (ethics.length > 0) {
-    const inner = ethics.map((e) => `\t\t\tvalue = ${e}`).join("\n");
-    lines.push(`\t\tethics = {\n${inner}\n\t\t}`);
-  }
-  if (authorities.length === 1) {
-    lines.push(`\t\tauthority = {\n\t\t\tvalue = ${authorities[0]}\n\t\t}`);
-  } else if (authorities.length > 1) {
-    const inner = authorities.map((a) => `\t\t\t\tvalue = ${a}`).join("\n");
-    lines.push(`\t\tauthority = {\n\t\t\tOR = {\n${inner}\n\t\t\t}\n\t\t}`);
-  }
+const DEFAULT_AI = { base: 1, matchFactor: 2, mismatchFactor: 0.25 };
 
-  if (lines.length === 0) return "";
-  return `\tpossible = {\n${lines.join("\n")}\n\t}\n`;
+/** Render the `ai_weight = { ... }` block, or "" if it would be trivial. */
+function renderAiWeight(ai: AiWeight): string {
+  const groups: string[] = [];
+  for (const g of [ai.match, ai.mismatch]) {
+    if (g.personalities.length === 0) continue;
+    const checks = g.personalities
+      .map((p) => `\t\t\t\thas_ai_personality = ${p}`)
+      .join("\n");
+    groups.push(
+      `\t\tmodifier = {\n\t\t\tfactor = ${num(g.factor)}\n\t\t\tOR = {\n${checks}\n\t\t\t}\n\t\t}`,
+    );
+  }
+  if (groups.length === 0 && ai.base === DEFAULT_AI.base) return "";
+  return `\tai_weight = {\n\t\tbase = ${num(ai.base)}\n${groups.join("\n")}${
+    groups.length ? "\n" : ""
+  }\t}\n`;
 }
 
 /** Generate the full civics .txt file content for the project. */
 export function generateCivicsFile(project: ModProject): string {
   const blocks = project.civics.map((civic) => {
     const key = effectiveCivicKey(project, civic);
-    const possible = renderRequirements(civic);
+    const potential = renderCondBlock("potential", civic.potential);
+    const possible = renderCondBlock("possible", civic.possible);
     const modifierLines = civic.modifiers
       .map((m) => `\t\t${m.key} = ${num(m.value)}`)
       .join("\n");
     const modifierBlock =
       civic.modifiers.length > 0 ? `\tmodifier = {\n${modifierLines}\n\t}\n` : "";
+    const aiWeight = renderAiWeight(civic.aiWeight);
 
     return (
       `${key} = {\n` +
       `\tdescription = "${descKey(key)}"\n` +
+      potential +
       possible +
       modifierBlock +
       `\trandom_weight = { base = 1 }\n` +
+      aiWeight +
       `}\n`
     );
   });

@@ -16,12 +16,78 @@ export interface CivicModifier {
   value: number;
 }
 
-/** A list-style requirement on ethics / authorities (potential + possible). */
-export interface Requirements {
-  /** Ethic keys the empire must have ALL of. */
-  ethics: string[];
-  /** Authority keys the empire must be ONE of (empty = any). */
-  authorities: string[];
+/* ---------------- Condition trees (potential / possible) ---------------- */
+
+export type Comparator = "=" | "<" | ">" | "<=" | ">=";
+
+/** Boolean operator container. */
+export interface OpNode {
+  id: string;
+  type: "op";
+  op: "AND" | "OR" | "NOR" | "NAND" | "NOT";
+  children: CondNode[];
+}
+
+/** Scope-change link (e.g. `owner = { ... }`); children evaluate in the new scope. */
+export interface ScopeNode {
+  id: string;
+  type: "scope";
+  key: string;
+  children: CondNode[];
+}
+
+/** Iterator (`any_owned_planet = { ... }`); children evaluate in the iterated scope. */
+export interface IteratorNode {
+  id: string;
+  type: "iterator";
+  key: string;
+  children: CondNode[];
+}
+
+/** A leaf value/boolean/enum check (`has_authority = auth_imperial`). */
+export interface TriggerNode {
+  id: string;
+  type: "trigger";
+  key: string;
+  comparator: Comparator;
+  value: string;
+}
+
+export type ListEntryMode = "value" | "OR" | "NOT" | "NOR";
+
+/** One sub-clause of a civic list-syntax block. */
+export interface ListEntry {
+  mode: ListEntryMode;
+  values: string[];
+}
+
+/** Civic-specific list syntax (`ethics = { value = … }`), produced by the wizard. */
+export interface ListNode {
+  id: string;
+  type: "list";
+  key: "ethics" | "authority" | "civics" | "country_type";
+  entries: ListEntry[];
+}
+
+export type CondNode =
+  | OpNode
+  | ScopeNode
+  | IteratorNode
+  | TriggerNode
+  | ListNode;
+
+/* ---------------- AI weight ---------------- */
+
+export interface AiWeightGroup {
+  /** Multiplier applied when the empire matches one of these personalities. */
+  factor: number;
+  personalities: string[];
+}
+
+export interface AiWeight {
+  base: number;
+  match: AiWeightGroup;
+  mismatch: AiWeightGroup;
 }
 
 export interface Civic {
@@ -36,7 +102,12 @@ export interface Civic {
   /** Description shown under the Effects heading. */
   description: string;
   modifiers: CivicModifier[];
-  requirements: Requirements;
+  /** `potential` condition tree (root is an implicit AND at country scope). */
+  potential: CondNode[];
+  /** `possible` condition tree (root is an implicit AND at country scope). */
+  possible: CondNode[];
+  /** AI selection weighting. */
+  aiWeight: AiWeight;
   /** Data-URL of an uploaded icon image, or null. */
   iconDataUrl: string | null;
 }

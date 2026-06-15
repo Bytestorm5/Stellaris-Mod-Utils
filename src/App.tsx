@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Civic, ModProject } from "./types";
+import type { AiWeight, Civic, CondNode, ListNode, ModProject } from "./types";
 import TopBar from "./components/TopBar";
 import Sidebar, { type SidebarTab } from "./components/Sidebar";
 import ModSettingsDialog from "./components/ModSettingsDialog";
@@ -12,6 +12,14 @@ import { toKey } from "./lib/pdxExport";
 const STORAGE_KEY = "civic-forge-project-v2";
 const PREFS_KEY = "civic-forge-prefs-v1";
 
+function defaultAiWeight(): AiWeight {
+  return {
+    base: 1,
+    match: { factor: 2, personalities: [] },
+    mismatch: { factor: 0.25, personalities: [] },
+  };
+}
+
 function newCivic(index: number): Civic {
   const name = `New Civic ${index}`;
   return {
@@ -21,8 +29,53 @@ function newCivic(index: number): Civic {
     name,
     description: "",
     modifiers: [],
-    requirements: { ethics: [], authorities: [] },
+    potential: [],
+    possible: [],
+    aiWeight: defaultAiWeight(),
     iconDataUrl: null,
+  };
+}
+
+/** Legacy v2 civics stored an ethics/authority `requirements` object. */
+interface LegacyCivic {
+  requirements?: { ethics: string[]; authorities: string[] };
+  potential?: CondNode[];
+  possible?: CondNode[];
+  aiWeight?: AiWeight;
+}
+
+/** Bring a stored civic up to the current shape, converting legacy requirements. */
+function migrateCivic(c: Civic & LegacyCivic): Civic {
+  const possible: CondNode[] = c.possible ?? [];
+  if (!c.possible && c.requirements) {
+    const { ethics, authorities } = c.requirements;
+    if (ethics?.length) {
+      const node: ListNode = {
+        id: crypto.randomUUID(),
+        type: "list",
+        key: "ethics",
+        entries: [{ mode: "value", values: ethics }],
+      };
+      possible.push(node);
+    }
+    if (authorities?.length) {
+      const node: ListNode = {
+        id: crypto.randomUUID(),
+        type: "list",
+        key: "authority",
+        entries: [
+          { mode: authorities.length > 1 ? "OR" : "value", values: authorities },
+        ],
+      };
+      possible.push(node);
+    }
+  }
+  return {
+    ...c,
+    noPrefix: c.noPrefix ?? false,
+    potential: c.potential ?? [],
+    possible,
+    aiWeight: c.aiWeight ?? defaultAiWeight(),
   };
 }
 
@@ -48,7 +101,7 @@ function loadProject(): ModProject {
           ...defaultProject(),
           ...p,
           idPrefix: p.idPrefix ?? "",
-          civics: p.civics.map((c) => ({ ...c, noPrefix: c.noPrefix ?? false })),
+          civics: p.civics.map((c) => migrateCivic(c as Civic & LegacyCivic)),
         } as ModProject;
       }
     }

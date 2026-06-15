@@ -30,8 +30,20 @@ light themes, vendored under `src/ds/`).
   human-readable name and category (Pops, Planets, Ships, Countries, …).
 - **Set & edit them cleanly** — add a modifier, type a value, and see a live
   interpretation (e.g. `0.1` → `+10%` for multipliers).
-- **Requirements** — optionally restrict a civic to specific ethics and
-  authorities with one-click chips.
+- **Condition trees (`potential` / `possible`)** — a nested builder starting in
+  `country` scope. Add boolean operators (AND/OR/NOR/NAND/NOT), scope changes
+  (`owner`, `capital_scope`, …), iterators (`any_owned_planet`, …), and value
+  checks (`has_authority`, `num_pops`, …). The add-condition picker is
+  **scope-aware**: it only offers what's valid in the scope you're adding to,
+  and each container tracks the scope its children evaluate in. Backed by the
+  ~840 triggers and ~90 scope links parsed from the docs.
+- **Ethics / authority wizard** — over `potential` and `possible`, a modal where
+  you whitelist/blacklist ethics and authorities (the most common structure).
+  On apply it autofills the civic list-syntax condition (`ethics = { … }`,
+  `authority = { … }`).
+- **AI weight** — an abstracted editor: pick AI personalities that *match* (more
+  likely) or *conflict* (less likely) with the civic, with editable factors,
+  emitted as the standard `ai_weight = { modifier = { factor … OR { … } } }`.
 - **Icons** — upload a PNG/JPG; it's converted to an uncompressed 128×128
   `.dds` and placed at the path Stellaris expects.
 - **One-click export** — produces a proper mod folder:
@@ -73,9 +85,13 @@ The raw game-files dump itself is **not** committed (it's large and
 copyrighted); only the curated JSON it produces is. The extractor reads:
 
 - `DOCS/MODIFIERS.log` — modifier keys and their categories
+- `DOCS/TRIGGERS.log` — conditions, with supported scopes + value-type hints,
+  classified into operators / iterators / value checks
+- `DOCS/SCOPES.log` — scope-change links (input scopes → output scope)
 - `localisation/english/*.yml` — human-readable names (resolving `$REF$`
   tokens and stripping color/icon markup)
 - `common/ethics/`, `common/governments/authorities/` — requirement options
+- `common/personalities/` — AI personalities for the `ai_weight` editor
 
 ## Project layout
 
@@ -85,6 +101,10 @@ copyrighted); only the curated JSON it produces is. The extractor reads:
 | `src/ds/` | Vendored SMU design system: tokens (`styles.css`) + typed React primitives |
 | `src/objectTypes.ts` | Registry of buildable object kinds (civics, future types) |
 | `src/lib/modifiers.ts` | Loads data, categories, value interpretation |
+| `src/lib/conditions.ts` | Trigger/scope data, scope resolution, tree edits + PDX serialization |
+| `src/components/conditions/` | Condition-tree builder (builder, recursive node, add-picker) |
+| `src/components/EthicsAuthorityWizard.tsx` | Whitelist/blacklist wizard |
+| `src/components/AiWeightEditor.tsx` | AI personality match/mismatch editor |
 | `src/lib/pdxExport.ts` | Civic `.txt` / `.yml` / descriptor generation + id-prefix logic |
 | `src/lib/dds.ts` | PNG/JPG → uncompressed `.dds` encoder |
 | `src/lib/zip.ts` | Assembles the downloadable mod `.zip` (JSZip) |

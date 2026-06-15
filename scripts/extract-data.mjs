@@ -123,6 +123,175 @@ const authorities = topLevelKeys("common/governments/authorities", /^auth_/).map
 );
 
 /* ------------------------------------------------------------------ */
+/* Scopes — SCOPES.log: scope-change links (input scopes -> output)    */
+/* ------------------------------------------------------------------ */
+
+/** Split a doc log into blocks separated by blank lines. */
+function logBlocks(file) {
+  const text = fs.readFileSync(path.join(DUMP, "DOCS", file), "utf8");
+  return text
+    .split(/\r?\n\r?\n/)
+    .map((b) => b.split(/\r?\n/).map((l) => l.replace(/\r$/, "")))
+    .filter((lines) => lines.length > 0);
+}
+
+function parseNameDesc(line) {
+  const m = line.match(/^([a-z_][a-z0-9_]*)\s+-\s+(.*)$/i);
+  return m ? { key: m[1], desc: m[2] } : null;
+}
+
+function scopeList(value) {
+  const v = value.trim();
+  if (/^all$/i.test(v)) return ["all"];
+  return v.split(/\s+/).filter(Boolean);
+}
+
+const scopes = [];
+for (const lines of logBlocks("SCOPES.log")) {
+  const nd = parseNameDesc(lines[0]);
+  if (!nd) continue;
+  const supLine = lines.find((l) => l.startsWith("Supported Scopes:"));
+  const outLine = lines.find((l) => l.startsWith("Output Scope:"));
+  if (!supLine || !outLine) continue;
+  const to = outLine.replace("Output Scope:", "").trim();
+  scopes.push({
+    key: nd.key,
+    desc: nd.desc,
+    from: scopeList(supLine.replace("Supported Scopes:", "")),
+    to,
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Triggers — TRIGGERS.log: conditions with scope + value-type hints   */
+/* ------------------------------------------------------------------ */
+
+const OPERATORS = new Set(["and", "or", "nor", "nand", "not"]);
+// Meta/flow triggers that don't fit the simple value/scope/operator model.
+const META = new Set([
+  "text",
+  "custom_tooltip",
+  "hidden_trigger",
+  "if",
+  "else",
+  "else_if",
+  "switch",
+  "calc_true_if",
+  "closest_system",
+  "complex_trigger_modifier",
+  "trigger_if",
+  "trigger_else",
+  "trigger_else_if",
+  "export_trigger_value_to_variable",
+]);
+
+// Scope vocabulary used to guess an iterator's inner scope from its name.
+const SCOPE_TOKENS = [
+  ["galactic_object", "galactic_object"],
+  ["pop_faction", "pop_faction"],
+  ["archaeological_site", "archaeological_site"],
+  ["megastructure", "megastructure"],
+  ["starbase", "starbase"],
+  ["system", "galactic_object"],
+  ["planet", "planet"],
+  ["country", "country"],
+  ["empire", "country"],
+  ["species", "species"],
+  ["leader", "leader"],
+  ["fleet", "fleet"],
+  ["ship", "ship"],
+  ["army", "army"],
+  ["pop", "pop"],
+  ["sector", "sector"],
+  ["deposit", "deposit"],
+];
+
+function guessIteratorScope(key) {
+  const stem = key.replace(/^(any|every|count|all|random)_/, "");
+  for (const [token, scope] of SCOPE_TOKENS) {
+    if (stem.includes(token)) return scope;
+  }
+  return null;
+}
+
+/** Infer the value type + comparator hint from a usage example line. */
+function inferValue(usage) {
+  if (!usage) return { valueType: "block", rhs: "" };
+  // Block-style usage (takes { ... }) with no scalar comparison.
+  const cmp = usage.match(/^[a-z_][a-z0-9_]*\s*(<=|>=|<|>|=)\s*(.+)$/i);
+  if (!cmp) {
+    if (usage.includes("{")) return { valueType: "block", rhs: "" };
+    return { valueType: "value", rhs: "" };
+  }
+  const rhs = cmp[2].trim();
+  if (rhs.startsWith("{")) return { valueType: "block", rhs: "" };
+  if (/^(yes|no)$/i.test(rhs)) return { valueType: "bool", rhs };
+  if (/^-?\d+(\.\d+)?$/.test(rhs)) return { valueType: "number", rhs };
+  return { valueType: "value", rhs };
+}
+
+const triggers = [];
+for (const lines of logBlocks("TRIGGERS.log")) {
+  const nd = parseNameDesc(lines[0]);
+  if (!nd) continue;
+  const supIdx = lines.findIndex((l) => l.startsWith("Supported Scopes:"));
+  if (supIdx === -1) continue;
+  const key = nd.key;
+  const usage = lines.slice(1, supIdx).join("\n").trim();
+  const firstUsage = lines[1] && !lines[1].startsWith("Supported Scopes:")
+    ? lines[1]
+    : "";
+  const scopesFor = scopeList(lines[supIdx].replace("Supported Scopes:", ""));
+
+  let kind;
+  if (OPERATORS.has(key)) kind = "operator";
+  else if (/^(any|every|count|all)_/.test(key)) kind = "iterator";
+  else if (META.has(key)) continue; // skip meta/flow control in the builder
+  else kind = "value";
+
+  const { valueType, rhs } = inferValue(firstUsage);
+  // Skip non-iterator block triggers we can't model as a leaf.
+  if (kind === "value" && valueType === "block") continue;
+
+  const entry = { key, desc: nd.desc, scopes: scopesFor, kind, usage };
+  if (kind === "value") {
+    entry.valueType = valueType;
+    if (rhs) entry.hint = rhs;
+  }
+  if (kind === "iterator") {
+    entry.innerScope = guessIteratorScope(key);
+  }
+  triggers.push(entry);
+}
+
+/* ------------------------------------------------------------------ */
+/* AI personalities — for the ai_weight builder                        */
+/* ------------------------------------------------------------------ */
+
+const personalities = [];
+{
+  const dir = path.join(DUMP, "common/personalities");
+  if (fs.existsSync(dir)) {
+    const seen = new Set();
+    for (const file of fs.readdirSync(dir).sort()) {
+      if (!file.endsWith(".txt")) continue;
+      const text = fs.readFileSync(path.join(dir, file), "utf8");
+      const playable = file.startsWith("00_");
+      for (const line of text.split(/\r?\n/)) {
+        const m = line.match(/^([a-z][a-z0-9_]*)\s*=\s*\{/);
+        if (!m || seen.has(m[1])) continue;
+        seen.add(m[1]);
+        personalities.push({
+          key: m[1],
+          name: locName(m[1]) || humanize(m[1]),
+          playable,
+        });
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Write output                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -135,3 +304,6 @@ console.log("Extracted:");
 write("modifiers.json", modifiers);
 write("ethics.json", ethics);
 write("authorities.json", authorities);
+write("scopes.json", scopes);
+write("triggers.json", triggers);
+write("personalities.json", personalities);
