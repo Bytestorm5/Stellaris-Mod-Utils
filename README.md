@@ -24,6 +24,13 @@ Picked from the sidebar's **Types** tab:
 - **Resolutions** — galactic-community resolutions with an icon, group, tier,
   influence cost, and modifiers; a matching `resolution_category` is generated
   automatically so they appear in-game.
+- **Components** — utility ship components (`utility_component_template`): slot
+  size, power, cost/upkeep, and ship modifiers.
+- **Planet buildings** — category, build cost/upkeep, planet & country
+  modifiers, tech prerequisites, and a planet-scope `potential`.
+- **Starbase buildings** & **starbase modules** — host type, construction days,
+  cost/upkeep, country modifiers, and a starbase-scope `potential` (modules add
+  a section slot).
 
 Each type exports to its own file under `common/` with a shared, BOM-prefixed
 localisation file and DDS icons. The whole pipeline is generic: an object-type

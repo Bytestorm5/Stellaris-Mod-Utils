@@ -4,11 +4,16 @@ import type {
   AiWeight,
   Civic,
   CivicModifier,
+  Component,
   CondNode,
   Keyed,
   ModProject,
+  PlanetBuilding,
   Policy,
   Resolution,
+  ResourceAmount,
+  StarbaseBuilding,
+  StarbaseModule,
   Trait,
 } from "../types";
 import { serializeNodes } from "./conditions";
@@ -73,13 +78,41 @@ function renderCondBlock(
   return `${tab(depth)}${name} = {\n${serializeNodes(nodes, depth + 1, registerText)}\n${tab(depth)}}`;
 }
 
-/** Render a `modifier = { ... }` block, or "" if empty (no trailing newline). */
-function renderModifiers(mods: CivicModifier[], depth = 1): string {
+/** Render a modifier block (named `modifier` by default), or "" if empty. */
+function renderModifiers(
+  mods: CivicModifier[],
+  depth = 1,
+  name = "modifier",
+): string {
   if (mods.length === 0) return "";
   const lines = mods
     .map((m) => `${tab(depth + 1)}${m.key} = ${num(m.value)}`)
     .join("\n");
-  return `${tab(depth)}modifier = {\n${lines}\n${tab(depth)}}`;
+  return `${tab(depth)}${name} = {\n${lines}\n${tab(depth)}}`;
+}
+
+/** Render a `resources = { category cost {} upkeep {} }` block, or "" if empty. */
+function renderResources(
+  cost: ResourceAmount[],
+  upkeep: ResourceAmount[],
+  category: string,
+  depth = 1,
+): string {
+  if (cost.length === 0 && upkeep.length === 0) return "";
+  const sub = (label: string, list: ResourceAmount[]) =>
+    list.length
+      ? `${tab(depth + 1)}${label} = {\n${list
+          .map((r) => `${tab(depth + 2)}${r.resource} = ${num(r.amount)}`)
+          .join("\n")}\n${tab(depth + 1)}}`
+      : "";
+  const parts = [
+    `${tab(depth + 1)}category = ${category}`,
+    sub("cost", cost),
+    sub("upkeep", upkeep),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return `${tab(depth)}resources = {\n${parts}\n${tab(depth)}}`;
 }
 
 // AI weight factors defer to the game's standard scripted variables.
@@ -217,6 +250,64 @@ export function buildResolution(project: ModProject, res: Resolution) {
   return { block: joinBlock(key, parts), loc };
 }
 
+export function buildingIconPath(k: string): string {
+  return `gfx/interface/icons/buildings/${k}.dds`;
+}
+
+export function buildComponent(project: ModProject, comp: Component) {
+  const key = effectiveKey(project, comp);
+  const { loc } = locContext(key, comp.name, comp.description);
+  const parts: string[] = [`\tkey = "${key}"`, `\tsize = ${comp.size}`];
+  if (comp.icon) parts.push(`\ticon = "${comp.icon}"`);
+  parts.push(`\tpower = ${num(comp.power)}`);
+  parts.push(renderResources(comp.cost, comp.upkeep, "ship_components"));
+  parts.push(renderModifiers(comp.modifiers));
+  parts.push(`\tcomponent_set = "${key}"`);
+  // Components are anonymous `utility_component_template` blocks keyed by `key`.
+  return { block: joinBlock("utility_component_template", parts), loc };
+}
+
+export function buildPlanetBuilding(project: ModProject, b: PlanetBuilding) {
+  const key = effectiveKey(project, b);
+  const { loc, registerText } = locContext(key, b.name, b.description);
+  const parts: string[] = [`\tcategory = ${b.category}`];
+  if (b.iconDataUrl) parts.push(`\ticon = "${buildingIconPath(key)}"`);
+  parts.push(renderCondBlock("potential", b.potential, registerText));
+  if (b.prerequisites.length)
+    parts.push(`\tprerequisites = { ${b.prerequisites.map((p) => `"${p}"`).join(" ")} }`);
+  parts.push(renderResources(b.cost, b.upkeep, "planet_buildings"));
+  parts.push(renderModifiers(b.planetModifiers, 1, "planet_modifier"));
+  parts.push(renderModifiers(b.countryModifiers, 1, "country_modifier"));
+  return { block: joinBlock(key, parts), loc };
+}
+
+export function buildStarbaseBuilding(project: ModProject, b: StarbaseBuilding) {
+  const key = effectiveKey(project, b);
+  const { loc, registerText } = locContext(key, b.name, b.description);
+  const parts: string[] = [];
+  if (b.icon) parts.push(`\ticon = "${b.icon}"`);
+  parts.push(`\tconstruction_days = ${num(b.constructionDays)}`);
+  parts.push(`\tstarbase_type = ${b.starbaseType}`);
+  parts.push(renderCondBlock("potential", b.potential, registerText));
+  parts.push(renderResources(b.cost, b.upkeep, "starbase_buildings"));
+  parts.push(renderModifiers(b.countryModifiers, 1, "country_modifier"));
+  return { block: joinBlock(key, parts), loc };
+}
+
+export function buildStarbaseModule(project: ModProject, m: StarbaseModule) {
+  const key = effectiveKey(project, m);
+  const { loc, registerText } = locContext(key, m.name, m.description);
+  const parts: string[] = [];
+  if (m.icon) parts.push(`\ticon = "${m.icon}"`);
+  if (m.section) parts.push(`\tsection = "${m.section}"`);
+  parts.push(`\tconstruction_days = ${num(m.constructionDays)}`);
+  parts.push(`\tstarbase_type = ${m.starbaseType}`);
+  parts.push(renderCondBlock("potential", m.potential, registerText));
+  parts.push(renderResources(m.cost, m.upkeep, "starbase_modules"));
+  parts.push(renderModifiers(m.countryModifiers, 1, "country_modifier"));
+  return { block: joinBlock(key, parts), loc };
+}
+
 /** Slug used for the mod folder + file name prefixes. */
 export function folderSlug(modName: string): string {
   return (
@@ -272,6 +363,28 @@ export function buildExport(project: ModProject): ExportBundle {
   for (const r of project.resolutions) {
     const { block, loc: l } = buildResolution(project, r);
     add(`common/resolutions/00_${slug}_resolutions.txt`, block);
+    loc.push(...l);
+  }
+  for (const c of project.components) {
+    const { block, loc: l } = buildComponent(project, c);
+    add(`common/component_templates/00_${slug}_components.txt`, block);
+    loc.push(...l);
+  }
+  for (const b of project.buildings) {
+    const { block, loc: l } = buildPlanetBuilding(project, b);
+    add(`common/buildings/00_${slug}_buildings.txt`, block);
+    loc.push(...l);
+    if (b.iconDataUrl)
+      icons.push({ path: buildingIconPath(effectiveKey(project, b)), dataUrl: b.iconDataUrl });
+  }
+  for (const b of project.starbaseBuildings) {
+    const { block, loc: l } = buildStarbaseBuilding(project, b);
+    add(`common/starbase_buildings/00_${slug}_starbase_buildings.txt`, block);
+    loc.push(...l);
+  }
+  for (const m of project.starbaseModules) {
+    const { block, loc: l } = buildStarbaseModule(project, m);
+    add(`common/starbase_modules/00_${slug}_starbase_modules.txt`, block);
     loc.push(...l);
   }
   // Resolutions only appear in-game once listed in a resolution_category.

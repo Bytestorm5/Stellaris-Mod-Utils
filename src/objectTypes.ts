@@ -48,4 +48,32 @@ export const OBJECT_TYPES: ObjectTypeDef[] = [
     icon: "Globe",
     available: true,
   },
+  {
+    id: "component",
+    label: "Components",
+    blurb: "Utility ship components — modifiers, power draw, and cost.",
+    icon: "Cpu",
+    available: true,
+  },
+  {
+    id: "building",
+    label: "Planet buildings",
+    blurb: "Planet buildings with jobs/modifiers, cost, and requirements.",
+    icon: "Building2",
+    available: true,
+  },
+  {
+    id: "starbase_building",
+    label: "Starbase buildings",
+    blurb: "Starbase / orbital-ring buildings with country modifiers.",
+    icon: "SatelliteDish",
+    available: true,
+  },
+  {
+    id: "starbase_module",
+    label: "Starbase modules",
+    blurb: "Starbase section modules with modifiers and cost.",
+    icon: "Orbit",
+    available: true,
+  },
 ];

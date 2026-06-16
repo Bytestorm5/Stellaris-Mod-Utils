@@ -47,6 +47,53 @@ export const LEADER_CLASSES: NamedEntry[] = [
   { key: "official", name: "Official" },
 ];
 
+/** Common resources for cost / upkeep blocks. */
+export const RESOURCES: NamedEntry[] = [
+  { key: "energy", name: "Energy" },
+  { key: "minerals", name: "Minerals" },
+  { key: "food", name: "Food" },
+  { key: "alloys", name: "Alloys" },
+  { key: "consumer_goods", name: "Consumer Goods" },
+  { key: "influence", name: "Influence" },
+  { key: "unity", name: "Unity" },
+  { key: "exotic_gases", name: "Exotic Gases" },
+  { key: "volatile_motes", name: "Volatile Motes" },
+  { key: "rare_crystals", name: "Rare Crystals" },
+  { key: "sr_dark_matter", name: "Dark Matter" },
+  { key: "sr_living_metal", name: "Living Metal" },
+  { key: "sr_zro", name: "Zro" },
+  { key: "nanites", name: "Nanites" },
+];
+
+/** Ship component slot sizes. */
+export const COMPONENT_SIZES: NamedEntry[] = [
+  { key: "small", name: "Small" },
+  { key: "medium", name: "Medium" },
+  { key: "large", name: "Large" },
+  { key: "extra_large", name: "Extra large" },
+  { key: "aux", name: "Auxiliary" },
+  { key: "point_defence", name: "Point defence" },
+];
+
+/** Planet building gameplay categories. */
+export const BUILDING_CATEGORIES: NamedEntry[] = [
+  { key: "government", name: "Government" },
+  { key: "resource", name: "Resource" },
+  { key: "manufacturing", name: "Manufacturing" },
+  { key: "research", name: "Research" },
+  { key: "unity", name: "Unity" },
+  { key: "amenity", name: "Amenity" },
+  { key: "army", name: "Army" },
+  { key: "trade", name: "Trade" },
+  { key: "pop_assembly", name: "Pop assembly" },
+];
+
+/** Starbase / orbital-ring host types. */
+export const STARBASE_TYPES: NamedEntry[] = [
+  { key: "starbase", name: "Starbase" },
+  { key: "orbital_ring", name: "Orbital ring" },
+];
+
 /** Lean global pool for fields with no recognized context (excludes modifiers). */
 const GLOBAL: NamedEntry[] = [
   ...POOLS.ethic,

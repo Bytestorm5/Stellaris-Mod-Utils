@@ -739,6 +739,22 @@ body,
   flex: 1;
 }
 
+/* Resource cost/upkeep rows */
+.res-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.res-row .cond-select {
+  flex: 1;
+  height: var(--control-sm);
+}
+
+.res-row__amt {
+  width: 96px;
+}
+
 .wz-explain {
   font-size: var(--text-xs);
   color: var(--text-muted);

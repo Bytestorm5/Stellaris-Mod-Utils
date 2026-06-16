@@ -214,6 +214,91 @@ export interface ModProject {
   traits: Trait[];
   policies: Policy[];
   resolutions: Resolution[];
+  components: Component[];
+  buildings: PlanetBuilding[];
+  starbaseBuildings: StarbaseBuilding[];
+  starbaseModules: StarbaseModule[];
+}
+
+/** A `{ resource = amount }` entry inside a cost/upkeep block. */
+export interface ResourceAmount {
+  resource: string;
+  amount: number;
+}
+
+/** Utility ship component (armor, shields, reactors, …). */
+export interface Component {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  /** GFX sprite key for the component icon. */
+  icon: string;
+  /** Slot size: small, medium, large, extra_large, aux, point_defence. */
+  size: string;
+  /** Power draw (negative) or supply (positive). */
+  power: number;
+  cost: ResourceAmount[];
+  upkeep: ResourceAmount[];
+  modifiers: CivicModifier[];
+}
+
+/** Planet building. */
+export interface PlanetBuilding {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  iconDataUrl: string | null;
+  /** Gameplay category: government, resource, unity, amenity, research, … */
+  category: string;
+  cost: ResourceAmount[];
+  upkeep: ResourceAmount[];
+  /** `potential` condition tree (planet scope). */
+  potential: CondNode[];
+  planetModifiers: CivicModifier[];
+  countryModifiers: CivicModifier[];
+  /** Technologies required to build it. */
+  prerequisites: string[];
+}
+
+/** Starbase building (built in a starbase slot). */
+export interface StarbaseBuilding {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  /** GFX sprite key for the icon. */
+  icon: string;
+  /** starbase or orbital_ring. */
+  starbaseType: string;
+  constructionDays: number;
+  cost: ResourceAmount[];
+  upkeep: ResourceAmount[];
+  /** `potential` condition tree (starbase scope). */
+  potential: CondNode[];
+  countryModifiers: CivicModifier[];
+}
+
+/** Starbase module (built in a starbase section). */
+export interface StarbaseModule {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  icon: string;
+  starbaseType: string;
+  /** Section/slot key the module occupies. */
+  section: string;
+  constructionDays: number;
+  cost: ResourceAmount[];
+  upkeep: ResourceAmount[];
+  potential: CondNode[];
+  countryModifiers: CivicModifier[];
 }
 
 /** Anything with a prefix-applicable key. */

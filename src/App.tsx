@@ -4,11 +4,15 @@ import type {
   BlockNode,
   Civic,
   CivicKind,
+  Component,
   CondNode,
   ModProject,
   NamedEntry,
+  PlanetBuilding,
   Policy,
   Resolution,
+  StarbaseBuilding,
+  StarbaseModule,
   Trait,
 } from "./types";
 import TopBar from "./components/TopBar";
@@ -18,13 +22,33 @@ import CivicEditor from "./components/CivicEditor";
 import TraitEditor from "./components/TraitEditor";
 import PolicyEditor from "./components/PolicyEditor";
 import ResolutionEditor from "./components/ResolutionEditor";
+import ComponentEditor from "./components/ComponentEditor";
+import PlanetBuildingEditor from "./components/PlanetBuildingEditor";
+import StarbaseBuildingEditor from "./components/StarbaseBuildingEditor";
+import StarbaseModuleEditor from "./components/StarbaseModuleEditor";
 import { Button, Icon } from "./ds";
 import { OBJECT_TYPES } from "./objectTypes";
 import { downloadModZip } from "./lib/zip";
 import { toKey, effectiveKey } from "./lib/pdxExport";
 
-type AnyObject = Civic | Trait | Policy | Resolution;
-type CollectionKey = "civics" | "traits" | "policies" | "resolutions";
+type AnyObject =
+  | Civic
+  | Trait
+  | Policy
+  | Resolution
+  | Component
+  | PlanetBuilding
+  | StarbaseBuilding
+  | StarbaseModule;
+type CollectionKey =
+  | "civics"
+  | "traits"
+  | "policies"
+  | "resolutions"
+  | "components"
+  | "buildings"
+  | "starbaseBuildings"
+  | "starbaseModules";
 
 const COLLECTION: Record<string, CollectionKey> = {
   civic: "civics",
@@ -32,6 +56,10 @@ const COLLECTION: Record<string, CollectionKey> = {
   trait: "traits",
   policy: "policies",
   resolution: "resolutions",
+  component: "components",
+  building: "buildings",
+  starbase_building: "starbaseBuildings",
+  starbase_module: "starbaseModules",
 };
 
 const STORAGE_KEY = "civic-forge-project-v2";
@@ -112,11 +140,84 @@ function newResolution(index: number): Resolution {
   };
 }
 
+function baseObj(prefix: string, label: string, index: number) {
+  const name = `New ${label} ${index}`;
+  return {
+    id: uid(),
+    key: toKey(prefix, name),
+    noPrefix: false,
+    name,
+    description: "",
+  };
+}
+
+function newComponent(index: number): Component {
+  const name = `New Component ${index}`;
+  return {
+    id: uid(),
+    key: name.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, ""),
+    noPrefix: false,
+    name,
+    description: "",
+    icon: "",
+    size: "small",
+    power: -10,
+    cost: [],
+    upkeep: [],
+    modifiers: [],
+  };
+}
+
+function newBuilding(index: number): PlanetBuilding {
+  return {
+    ...baseObj("building_", "Building", index),
+    iconDataUrl: null,
+    category: "resource",
+    cost: [],
+    upkeep: [],
+    potential: [],
+    planetModifiers: [],
+    countryModifiers: [],
+    prerequisites: [],
+  };
+}
+
+function newStarbaseBuilding(index: number): StarbaseBuilding {
+  return {
+    ...baseObj("", "Starbase Building", index),
+    icon: "",
+    starbaseType: "starbase",
+    constructionDays: 360,
+    cost: [],
+    upkeep: [],
+    potential: [],
+    countryModifiers: [],
+  };
+}
+
+function newStarbaseModule(index: number): StarbaseModule {
+  return {
+    ...baseObj("", "Starbase Module", index),
+    icon: "",
+    starbaseType: "starbase",
+    section: "",
+    constructionDays: 360,
+    cost: [],
+    upkeep: [],
+    potential: [],
+    countryModifiers: [],
+  };
+}
+
 /** Create a fresh object of the given type. */
 function newObject(type: string, index: number): AnyObject {
   if (type === "trait") return newTrait(index);
   if (type === "policy") return newPolicy(index);
   if (type === "resolution") return newResolution(index);
+  if (type === "component") return newComponent(index);
+  if (type === "building") return newBuilding(index);
+  if (type === "starbase_building") return newStarbaseBuilding(index);
+  if (type === "starbase_module") return newStarbaseModule(index);
   return newCivic(type as CivicKind, index);
 }
 
@@ -222,6 +323,10 @@ function defaultProject(): ModProject {
     traits: [],
     policies: [],
     resolutions: [],
+    components: [],
+    buildings: [],
+    starbaseBuildings: [],
+    starbaseModules: [],
   };
 }
 
@@ -242,6 +347,10 @@ function loadProject(): ModProject {
           traits: p.traits ?? [],
           policies: p.policies ?? [],
           resolutions: p.resolutions ?? [],
+          components: p.components ?? [],
+          buildings: p.buildings ?? [],
+          starbaseBuildings: p.starbaseBuildings ?? [],
+          starbaseModules: p.starbaseModules ?? [],
         } as ModProject;
       }
     }
@@ -339,6 +448,10 @@ export default function App() {
     ...project.traits,
     ...project.policies,
     ...project.resolutions,
+    ...project.components,
+    ...project.buildings,
+    ...project.starbaseBuildings,
+    ...project.starbaseModules,
   ].map((o) => ({ key: effectiveKey(project, o), name: o.name || o.key }));
 
   function subText(o: AnyObject): string {
@@ -369,11 +482,9 @@ export default function App() {
   };
 
   const activeTypeDef = OBJECT_TYPES.find((t) => t.id === activeType);
-  const totalObjects =
-    project.civics.length +
-    project.traits.length +
-    project.policies.length +
-    project.resolutions.length;
+  const totalObjects = (Object.values(COLLECTION) as CollectionKey[])
+    .filter((k, i, arr) => arr.indexOf(k) === i)
+    .reduce((n, k) => n + (project[k] as AnyObject[]).length, 0);
 
   return (
     <div className="app">
@@ -506,6 +617,49 @@ function ObjectEditor({
       <ResolutionEditor
         project={project}
         resolution={object as Resolution}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "component") {
+    return (
+      <ComponentEditor
+        project={project}
+        component={object as Component}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "building") {
+    return (
+      <PlanetBuildingEditor
+        project={project}
+        building={object as PlanetBuilding}
+        localIds={localIds}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "starbase_building") {
+    return (
+      <StarbaseBuildingEditor
+        project={project}
+        building={object as StarbaseBuilding}
+        localIds={localIds}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "starbase_module") {
+    return (
+      <StarbaseModuleEditor
+        project={project}
+        module={object as StarbaseModule}
+        localIds={localIds}
         onChange={onChange}
         onDelete={onDelete}
       />
