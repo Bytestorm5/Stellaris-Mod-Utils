@@ -155,6 +155,7 @@ function newComponent(index: number): Component {
   const name = `New Component ${index}`;
   return {
     id: uid(),
+    kind: "utility",
     key: name.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, ""),
     noPrefix: false,
     name,
@@ -164,7 +165,21 @@ function newComponent(index: number): Component {
     power: -10,
     cost: [],
     upkeep: [],
+    prerequisites: [],
     modifiers: [],
+    weaponType: "instant",
+    damageMin: 10,
+    damageMax: 20,
+    cooldown: 3,
+    range: 40,
+    accuracy: 0.9,
+    tracking: 0.3,
+    shieldPenetration: 0,
+    armorPenetration: 0,
+    shieldDamage: 1,
+    armorDamage: 1,
+    hullDamage: 1,
+    tags: "",
   };
 }
 
@@ -207,6 +222,12 @@ function newStarbaseModule(index: number): StarbaseModule {
     potential: [],
     countryModifiers: [],
   };
+}
+
+/** Fill in component fields added after components first shipped. */
+function normalizeComponent(c: Component): Component {
+  const base = newComponent(0);
+  return { ...base, ...c, kind: c.kind ?? "utility" };
 }
 
 /** Create a fresh object of the given type. */
@@ -347,7 +368,7 @@ function loadProject(): ModProject {
           traits: p.traits ?? [],
           policies: p.policies ?? [],
           resolutions: p.resolutions ?? [],
-          components: p.components ?? [],
+          components: (p.components ?? []).map(normalizeComponent),
           buildings: p.buildings ?? [],
           starbaseBuildings: p.starbaseBuildings ?? [],
           starbaseModules: p.starbaseModules ?? [],

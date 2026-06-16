@@ -24,8 +24,11 @@ Picked from the sidebar's **Types** tab:
 - **Resolutions** — galactic-community resolutions with an icon, group, tier,
   influence cost, and modifiers; a matching `resolution_category` is generated
   automatically so they appear in-game.
-- **Components** — utility ship components (`utility_component_template`): slot
-  size, power, cost/upkeep, and ship modifiers.
+- **Components** — utility *or* weapon ship components with tech prerequisites,
+  slot size, power, and cost/upkeep. Utilities get quick fields for shield/armor/
+  hull HP (bound to modifiers) plus the full modifier list; weapons get
+  dedicated damage (min/max), cooldown/range/accuracy/tracking, shield/armor
+  penetration, and per-target (shield/armor/hull) damage multipliers.
 - **Planet buildings** — category, build cost/upkeep, planet & country
   modifiers, tech prerequisites, and a planet-scope `potential`.
 - **Starbase buildings** & **starbase modules** — host type, construction days,

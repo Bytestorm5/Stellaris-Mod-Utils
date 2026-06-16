@@ -94,6 +94,13 @@ export const STARBASE_TYPES: NamedEntry[] = [
   { key: "orbital_ring", name: "Orbital ring" },
 ];
 
+/** Weapon firing types. */
+export const WEAPON_TYPES: NamedEntry[] = [
+  { key: "instant", name: "Instant (hitscan)" },
+  { key: "missile", name: "Missile" },
+  { key: "point_defence", name: "Point defence" },
+];
+
 /** Lean global pool for fields with no recognized context (excludes modifiers). */
 const GLOBAL: NamedEntry[] = [
   ...POOLS.ethic,

@@ -257,14 +257,43 @@ export function buildingIconPath(k: string): string {
 export function buildComponent(project: ModProject, comp: Component) {
   const key = effectiveKey(project, comp);
   const { loc } = locContext(key, comp.name, comp.description);
+  const isWeapon = comp.kind === "weapon";
   const parts: string[] = [`\tkey = "${key}"`, `\tsize = ${comp.size}`];
+  if (isWeapon) parts.push(`\ttype = ${comp.weaponType}`);
   if (comp.icon) parts.push(`\ticon = "${comp.icon}"`);
   parts.push(`\tpower = ${num(comp.power)}`);
+  if (comp.prerequisites.length)
+    parts.push(
+      `\tprerequisites = { ${comp.prerequisites.map((p) => `"${p}"`).join(" ")} }`,
+    );
   parts.push(renderResources(comp.cost, comp.upkeep, "ship_components"));
-  parts.push(renderModifiers(comp.modifiers));
+  if (isWeapon) {
+    parts.push(
+      `\tdamage = { min = ${num(comp.damageMin)} max = ${num(comp.damageMax)} }`,
+    );
+    parts.push(`\tcooldown = ${num(comp.cooldown)}`);
+    parts.push(`\trange = ${num(comp.range)}`);
+    parts.push(`\taccuracy = ${num(comp.accuracy)}`);
+    parts.push(`\ttracking = ${num(comp.tracking)}`);
+    if (comp.shieldPenetration > 0)
+      parts.push(`\tshield_penetration = ${num(comp.shieldPenetration)}`);
+    if (comp.armorPenetration > 0)
+      parts.push(`\tarmor_penetration = ${num(comp.armorPenetration)}`);
+    if (comp.shieldDamage !== 1)
+      parts.push(`\tshield_damage = ${num(comp.shieldDamage)}`);
+    if (comp.armorDamage !== 1)
+      parts.push(`\tarmor_damage = ${num(comp.armorDamage)}`);
+    if (comp.hullDamage !== 1)
+      parts.push(`\thull_damage = ${num(comp.hullDamage)}`);
+    if (comp.tags.trim()) parts.push(`\ttags = { ${comp.tags.trim()} }`);
+  } else {
+    parts.push(renderModifiers(comp.modifiers));
+  }
   parts.push(`\tcomponent_set = "${key}"`);
-  // Components are anonymous `utility_component_template` blocks keyed by `key`.
-  return { block: joinBlock("utility_component_template", parts), loc };
+  const blockName = isWeapon
+    ? "weapon_component_template"
+    : "utility_component_template";
+  return { block: joinBlock(blockName, parts), loc };
 }
 
 export function buildPlanetBuilding(project: ModProject, b: PlanetBuilding) {

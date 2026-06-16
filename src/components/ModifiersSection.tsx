@@ -9,6 +9,8 @@ interface Props {
   onChange: (modifiers: CivicModifier[]) => void;
   /** Heading; pass "" to render rows only (no section bar). */
   title?: string;
+  /** Modifier keys handled elsewhere (e.g. quick stats) — hidden from the list. */
+  hideKeys?: Set<string>;
 }
 
 /** Reusable modifier list + picker, shared by every object editor. */
@@ -16,6 +18,7 @@ export default function ModifiersSection({
   modifiers,
   onChange,
   title = "Modifiers",
+  hideKeys,
 }: Props) {
   const [picking, setPicking] = useState(false);
 
@@ -29,6 +32,9 @@ export default function ModifiersSection({
     onChange(modifiers.filter((m) => m.key !== key));
 
   const added = new Set(modifiers.map((m) => m.key));
+  const visible = hideKeys
+    ? modifiers.filter((m) => !hideKeys.has(m.key))
+    : modifiers;
 
   return (
     <>
@@ -36,7 +42,7 @@ export default function ModifiersSection({
         <div className="section-bar">
           <h2>{title}</h2>
           <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
-            {modifiers.length}
+            {visible.length}
           </span>
           <span className="spacer" />
           <Button
@@ -49,14 +55,14 @@ export default function ModifiersSection({
           </Button>
         </div>
       )}
-      {modifiers.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="empty">
           No modifiers yet. Add one to browse all{" "}
           {MODIFIER_BY_KEY.size.toLocaleString()} effects.
         </div>
       ) : (
         <div className="stack" style={{ gap: "var(--space-2)" }}>
-          {modifiers.map((m) => (
+          {visible.map((m) => (
             <ModifierRow
               key={m.key}
               mod={m}

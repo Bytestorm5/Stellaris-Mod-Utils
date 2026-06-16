@@ -226,9 +226,12 @@ export interface ResourceAmount {
   amount: number;
 }
 
-/** Utility ship component (armor, shields, reactors, …). */
+export type ComponentKind = "utility" | "weapon";
+
+/** Ship component — a utility (armor/shields/reactors) or a weapon. */
 export interface Component {
   id: string;
+  kind: ComponentKind;
   key: string;
   noPrefix: boolean;
   name: string;
@@ -241,7 +244,36 @@ export interface Component {
   power: number;
   cost: ResourceAmount[];
   upkeep: ResourceAmount[];
+  /** Technologies required to unlock it. */
+  prerequisites: string[];
+
+  /* ---- Utility ---- */
   modifiers: CivicModifier[];
+
+  /* ---- Weapon ---- */
+  /** instant, missile, or point_defence. */
+  weaponType: string;
+  damageMin: number;
+  damageMax: number;
+  /** Days between shots. */
+  cooldown: number;
+  range: number;
+  /** 0–1. */
+  accuracy: number;
+  /** 0–1. */
+  tracking: number;
+  /** Fraction of shields ignored (0–1). */
+  shieldPenetration: number;
+  /** Fraction of armor ignored (0–1). */
+  armorPenetration: number;
+  /** Damage multiplier vs shields (1 = normal). */
+  shieldDamage: number;
+  /** Damage multiplier vs armor. */
+  armorDamage: number;
+  /** Damage multiplier vs hull. */
+  hullDamage: number;
+  /** Space-separated weapon tags, e.g. "weapon_type_energy weapon_role_artillery". */
+  tags: string;
 }
 
 /** Planet building. */
