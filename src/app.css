@@ -588,8 +588,88 @@ body,
   border-color: var(--accent);
 }
 
-.cond__value {
-  width: 160px;
+/* Value control fills the remaining row width */
+.cond__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+.cond__field .smu-field {
+  flex: 1;
+}
+
+/* ---------------- Identifier autocomplete ---------------- */
+
+.idc {
+  position: relative;
+  width: 100%;
+}
+
+.idc__input {
+  width: 100%;
+  height: 26px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 0 8px;
+  outline: none;
+}
+
+.idc__input::placeholder {
+  color: var(--text-faint);
+}
+
+.idc__input:hover {
+  border-color: var(--border-strong);
+}
+
+.idc__input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+  background: var(--surface-overlay);
+}
+
+.idc__menu {
+  z-index: var(--z-tooltip);
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--rim-strong), var(--shadow-lg);
+  padding: 4px;
+}
+
+.idc__opt {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.idc__opt--hl {
+  background: var(--accent-soft);
+}
+
+.idc__key {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+
+.idc__name {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cond-select {

@@ -1,5 +1,11 @@
-import { useRef, useState } from "react";
-import type { Civic, CivicModifier, CondNode, ModProject } from "../types";
+import { useMemo, useRef, useState } from "react";
+import type {
+  Civic,
+  CivicModifier,
+  CondNode,
+  ModProject,
+  NamedEntry,
+} from "../types";
 import { MODIFIER_BY_KEY, interpret, isMultiplier } from "../lib/modifiers";
 import { toKey, normalizePrefix, effectiveCivicKey } from "../lib/pdxExport";
 import { Card, Input, Textarea, Switch, Button, IconButton, Icon } from "../ds";
@@ -64,6 +70,16 @@ export default function CivicEditor({
   const addedKeys = new Set(civic.modifiers.map((m) => m.key));
   const wizardNodes: CondNode[] =
     wizardBlock === "potential" ? civic.potential : civic.possible;
+
+  // The mod's own civics, surfaced in identifier autocomplete.
+  const localIds = useMemo<NamedEntry[]>(
+    () =>
+      project.civics.map((c) => ({
+        key: effectiveCivicKey(project, c),
+        name: c.name || c.key,
+      })),
+    [project],
+  );
 
   return (
     <div className="editor">
@@ -188,6 +204,7 @@ export default function CivicEditor({
         <ConditionBuilder
           nodes={civic.potential}
           scope={COUNTRY}
+          localIds={localIds}
           onChange={(potential) => patch({ potential })}
           onOpenWizard={() => setWizardBlock("potential")}
         />
@@ -204,6 +221,7 @@ export default function CivicEditor({
         <ConditionBuilder
           nodes={civic.possible}
           scope={COUNTRY}
+          localIds={localIds}
           onChange={(possible) => patch({ possible })}
           onOpenWizard={() => setWizardBlock("possible")}
         />

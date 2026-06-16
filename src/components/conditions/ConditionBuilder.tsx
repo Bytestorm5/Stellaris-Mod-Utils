@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Icon } from "../../ds";
-import type { CondNode } from "../../types";
+import type { CondNode, NamedEntry } from "../../types";
 import { updateNode, removeNode, addChildTo } from "../../lib/conditions";
 import ConditionNode from "./ConditionNode";
 import AddConditionDialog from "./AddConditionDialog";
@@ -8,6 +8,7 @@ import AddConditionDialog from "./AddConditionDialog";
 interface Props {
   nodes: CondNode[];
   scope: string;
+  localIds: NamedEntry[];
   onChange: (nodes: CondNode[]) => void;
   onOpenWizard: () => void;
 }
@@ -15,6 +16,7 @@ interface Props {
 export default function ConditionBuilder({
   nodes,
   scope,
+  localIds,
   onChange,
   onOpenWizard,
 }: Props) {
@@ -63,6 +65,7 @@ export default function ConditionBuilder({
               key={n.id}
               node={n}
               scope={scope}
+              localIds={localIds}
               onUpdate={update}
               onRemove={remove}
               onAddChild={addChild}

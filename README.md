@@ -36,7 +36,11 @@ light themes, vendored under `src/ds/`).
   checks (`has_authority`, `num_pops`, …). The add-condition picker is
   **scope-aware**: it only offers what's valid in the scope you're adding to,
   and each container tracks the scope its children evaluate in. Backed by the
-  ~840 triggers and ~90 scope links parsed from the docs.
+  ~840 triggers and ~90 scope links parsed from the docs. Value fields offer
+  **context-aware autocomplete** — an `ethics` value suggests ethics, a
+  `has_civic` value suggests civics (vanilla *and* your own mod's), etc., drawn
+  from a categorized identifier set (ethics, authorities, civics, country types,
+  traits, technologies, personalities, modifiers).
 - **Ethics / authority wizard** — over `potential` and `possible`, a modal with
   a compact, searchable list. Pick **Whitelist** (only the selected are allowed)
   or **Blacklist** (the selected are barred, the rest fine) per section. On apply

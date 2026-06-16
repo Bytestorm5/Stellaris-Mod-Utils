@@ -292,12 +292,48 @@ const personalities = [];
 }
 
 /* ------------------------------------------------------------------ */
+/* Identifiers — categorized keys for value autocomplete               */
+/* ------------------------------------------------------------------ */
+
+/** Collect top-level `key = {` definitions from a dir, filtered by regex. */
+function dirKeys(dir, re, skipFile = () => false) {
+  const keys = new Set();
+  const full = path.join(DUMP, dir);
+  if (!fs.existsSync(full)) return [];
+  for (const file of fs.readdirSync(full)) {
+    if (!file.endsWith(".txt") || skipFile(file)) continue;
+    const text = fs.readFileSync(path.join(full, file), "utf8");
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^([a-z][a-z0-9_]*)\s*=\s*\{/);
+      if (m && re.test(m[1])) keys.add(m[1]);
+    }
+  }
+  return [...keys].sort();
+}
+
+const named = (keys) =>
+  keys.map((key) => ({ key, name: locName(key) || humanize(key) }));
+
+const isDoc = (f) => f.startsWith("000_") || f.includes("documentation");
+
+const identifiers = {
+  ethic: ethics,
+  authority: authorities,
+  personality: personalities.map(({ key, name }) => ({ key, name })),
+  civic: named(dirKeys("common/governments/civics", /^[a-z]/, isDoc)),
+  country_type: named(dirKeys("common/country_types", /^[a-z]/, isDoc)),
+  trait: named(dirKeys("common/traits", /^trait_/, isDoc)),
+  technology: named(dirKeys("common/technology", /^tech_/, isDoc)),
+};
+
+/* ------------------------------------------------------------------ */
 /* Write output                                                        */
 /* ------------------------------------------------------------------ */
 
 const write = (name, data) => {
   fs.writeFileSync(path.join(OUT, name), JSON.stringify(data, null, 0));
-  console.log(`  ${name}: ${Array.isArray(data) ? data.length : "?"} entries`);
+  const n = Array.isArray(data) ? data.length : Object.keys(data).length;
+  console.log(`  ${name}: ${n} entries`);
 };
 
 console.log("Extracted:");
@@ -307,3 +343,4 @@ write("authorities.json", authorities);
 write("scopes.json", scopes);
 write("triggers.json", triggers);
 write("personalities.json", personalities);
+write("identifiers.json", identifiers);
