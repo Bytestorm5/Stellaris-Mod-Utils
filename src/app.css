@@ -479,49 +479,84 @@ body,
 .cond__children {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 4px;
 }
 
 .cond__children--root {
-  gap: var(--space-2);
+  gap: 6px;
 }
 
-/* Nested children get an indent + guide rail */
+/* Nested children get a small indent + a guide rail tinted by the parent type */
 .cond--container > .cond__children {
-  margin-left: var(--space-4);
-  margin-top: var(--space-2);
-  padding-left: var(--space-3);
-  border-left: 1px solid var(--border-soft);
+  margin-left: 9px;
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 1.5px solid var(--ct, var(--border-soft));
 }
 
 .cond {
   background: var(--surface-sunken);
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--ct, var(--border-soft));
+}
+
+/* Type accent colors */
+.cond[data-type="op"] {
+  --ct: var(--accent);
+}
+.cond[data-type="scope"] {
+  --ct: var(--info);
+}
+.cond[data-type="iterator"] {
+  --ct: var(--warning);
+}
+.cond[data-type="block"] {
+  --ct: var(--success);
+}
+.cond[data-type="trigger"],
+.cond[data-type="value"] {
+  --ct: var(--border-strong);
 }
 
 .cond--container {
-  padding: var(--space-2) var(--space-3) var(--space-3);
+  padding: 4px 6px 6px;
   background: var(--surface-card);
 }
 
 .cond--leaf {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 7px var(--space-3);
+  gap: 8px;
+  padding: 4px 8px;
 }
 
 .cond__head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
+  min-height: 28px;
+}
+
+/* Compact type tag */
+.cond__type {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ct);
+  background: color-mix(in srgb, var(--ct) 14%, transparent);
+  padding: 2px 5px;
+  border-radius: var(--radius-xs);
+  flex: 0 0 auto;
 }
 
 .cond__key {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--text-strong);
+  white-space: nowrap;
 }
 
 .cond__scope {
@@ -530,35 +565,53 @@ body,
   color: var(--text-faint);
 }
 
-.cond__summary {
-  font-size: var(--text-xs);
-  color: var(--text-body);
+/* Compact inline buttons inside nodes */
+.cond .smu-iconbtn {
+  width: 24px;
+  height: 24px;
 }
 
 .cond__empty {
-  font-size: var(--text-xs);
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
   color: var(--text-faint);
-  padding: 4px 2px;
+  background: transparent;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.cond__empty:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .cond__value {
-  width: 150px;
+  width: 160px;
 }
 
 .cond-select {
-  height: var(--control-sm);
+  height: 26px;
   background: var(--surface-sunken);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   color: var(--text-strong);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  padding: 0 6px;
+  padding: 0 4px;
   outline: none;
 }
 
 .cond-select:focus {
   border-color: var(--accent);
+}
+
+.wz-explain {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2);
 }
 
 /* ---------------- Wizard chips ---------------- */

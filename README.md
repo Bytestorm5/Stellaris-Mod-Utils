@@ -38,9 +38,9 @@ light themes, vendored under `src/ds/`).
   and each container tracks the scope its children evaluate in. Backed by the
   ~840 triggers and ~90 scope links parsed from the docs.
 - **Ethics / authority wizard** — over `potential` and `possible`, a modal with
-  a compact, searchable assign-list where you require/exclude ethics and
-  allow/exclude authorities (the most common structure). On apply it inserts the
-  result as **normal, editable condition nodes** (`ethics = { … }`,
+  a compact, searchable list. Pick **Whitelist** (only the selected are allowed)
+  or **Blacklist** (the selected are barred, the rest fine) per section. On apply
+  it inserts the result as **normal, editable condition nodes** (`ethics = { … }`,
   `authority = { … }`) — not an opaque blob — so you can tweak them afterwards.
 - **AI weight** — pick AI personalities for three buckets: *match*, *mismatch*,
   and *forbid*. Factors defer to the game's standard scripted variables

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge, IconButton, Input, Icon } from "../../ds";
+import { IconButton, Input, Icon } from "../../ds";
 import type { CondNode, Comparator, OpNode } from "../../types";
 import {
   TRIGGER_BY_KEY,
@@ -20,15 +20,6 @@ interface Props {
 const COMPARATORS: Comparator[] = ["=", "<", ">", "<=", ">="];
 const OPS: OpNode["op"][] = ["AND", "OR", "NOR", "NAND", "NOT"];
 
-const TYPE_TONE = {
-  op: "accent",
-  scope: "info",
-  iterator: "warning",
-  block: "success",
-  trigger: "neutral",
-  value: "neutral",
-} as const;
-
 export default function ConditionNode({
   node,
   scope,
@@ -40,16 +31,16 @@ export default function ConditionNode({
 
   const remove = (
     <IconButton size="sm" label="Remove" onClick={() => onRemove(node.id)}>
-      <Icon name="X" size={15} />
+      <Icon name="X" size={14} />
     </IconButton>
   );
 
   if (isContainer(node)) {
     const inner = childScope(node, scope);
     return (
-      <div className="cond cond--container">
+      <div className="cond cond--container" data-type={node.type}>
         <div className="cond__head">
-          <Badge tone={TYPE_TONE[node.type]}>{node.type}</Badge>
+          <span className="cond__type">{node.type}</span>
           {node.type === "op" ? (
             <select
               className="cond-select"
@@ -71,12 +62,11 @@ export default function ConditionNode({
             <code className="cond__key">{nodeLabel(node)}</code>
           )}
           {(node.type === "scope" || node.type === "iterator") && (
-            <span className="cond__scope">scope: {inner}</span>
+            <span className="cond__scope">→ {inner}</span>
           )}
           <span className="spacer" />
           <IconButton
             size="sm"
-            variant="accent"
             label="Add child condition"
             onClick={() => setAdding(true)}
           >
@@ -87,7 +77,9 @@ export default function ConditionNode({
 
         <div className="cond__children">
           {node.children.length === 0 ? (
-            <div className="cond__empty">Empty — add a child condition.</div>
+            <button className="cond__empty" onClick={() => setAdding(true)}>
+              + add condition
+            </button>
           ) : (
             node.children.map((c) => (
               <ConditionNode
@@ -114,9 +106,8 @@ export default function ConditionNode({
 
   if (node.type === "value") {
     return (
-      <div className="cond cond--leaf">
-        <code className="cond__key">value</code>
-        <span className="cond__eq">=</span>
+      <div className="cond cond--leaf" data-type="value">
+        <code className="cond__key">value =</code>
         <Input
           size="sm"
           mono
@@ -137,7 +128,7 @@ export default function ConditionNode({
   const def = TRIGGER_BY_KEY.get(node.key);
   const valueType = def?.valueType ?? "value";
   return (
-    <div className="cond cond--leaf">
+    <div className="cond cond--leaf" data-type="trigger" title={def?.desc}>
       <code className="cond__key">{node.key}</code>
       {valueType === "number" && (
         <select
