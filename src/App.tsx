@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AiWeight, Civic, CondNode, ListNode, ModProject } from "./types";
+import type { AiWeight, BlockNode, Civic, CondNode, ModProject } from "./types";
 import TopBar from "./components/TopBar";
 import Sidebar, { type SidebarTab } from "./components/Sidebar";
 import ModSettingsDialog from "./components/ModSettingsDialog";
@@ -13,17 +13,15 @@ const STORAGE_KEY = "civic-forge-project-v2";
 const PREFS_KEY = "civic-forge-prefs-v1";
 
 function defaultAiWeight(): AiWeight {
-  return {
-    base: 1,
-    match: { factor: 2, personalities: [] },
-    mismatch: { factor: 0.25, personalities: [] },
-  };
+  return { match: [], mismatch: [], forbid: [] };
 }
+
+const uid = () => crypto.randomUUID();
 
 function newCivic(index: number): Civic {
   const name = `New Civic ${index}`;
   return {
-    id: crypto.randomUUID(),
+    id: uid(),
     key: toKey("civic_", name),
     noPrefix: false,
     name,
@@ -36,46 +34,93 @@ function newCivic(index: number): Civic {
   };
 }
 
-/** Legacy v2 civics stored an ethics/authority `requirements` object. */
+/** Legacy `list` node and ai-weight shapes from earlier versions. */
+type LegacyListEntry = { mode: "value" | "OR" | "NOT" | "NOR"; values: string[] };
+type LegacyNode =
+  | CondNode
+  | { id: string; type: "list"; key: BlockNode["key"]; entries: LegacyListEntry[] }
+  | { id: string; type: string; children?: LegacyNode[] };
+type LegacyAiWeight =
+  | AiWeight
+  | { match?: { personalities: string[] }; mismatch?: { personalities: string[] } };
+
 interface LegacyCivic {
   requirements?: { ethics: string[]; authorities: string[] };
-  potential?: CondNode[];
-  possible?: CondNode[];
-  aiWeight?: AiWeight;
+  potential?: LegacyNode[];
+  possible?: LegacyNode[];
+  aiWeight?: LegacyAiWeight;
 }
 
-/** Bring a stored civic up to the current shape, converting legacy requirements. */
+/** Convert a legacy `list` node (with entries) into editable block/op/value nodes. */
+function convertNodes(nodes: LegacyNode[] = []): CondNode[] {
+  return nodes.map((n): CondNode => {
+    if (n.type === "list") {
+      const list = n as { key: BlockNode["key"]; entries: LegacyListEntry[] };
+      const children: CondNode[] = [];
+      for (const e of list.entries) {
+        if (e.mode === "value") {
+          children.push(...e.values.map((v) => ({ id: uid(), type: "value" as const, value: v })));
+        } else {
+          children.push({
+            id: uid(),
+            type: "op",
+            op: e.mode,
+            children: e.values.map((v) => ({ id: uid(), type: "value" as const, value: v })),
+          });
+        }
+      }
+      return { id: n.id, type: "block", key: list.key, children };
+    }
+    if ("children" in n && Array.isArray(n.children)) {
+      return { ...n, children: convertNodes(n.children) } as CondNode;
+    }
+    return n as CondNode;
+  });
+}
+
+function migrateAiWeight(ai?: LegacyAiWeight): AiWeight {
+  if (!ai) return defaultAiWeight();
+  if (Array.isArray((ai as AiWeight).match)) return ai as AiWeight;
+  const legacy = ai as { match?: { personalities: string[] }; mismatch?: { personalities: string[] } };
+  return {
+    match: legacy.match?.personalities ?? [],
+    mismatch: legacy.mismatch?.personalities ?? [],
+    forbid: [],
+  };
+}
+
+/** Bring a stored civic up to the current shape. */
 function migrateCivic(c: Civic & LegacyCivic): Civic {
-  const possible: CondNode[] = c.possible ?? [];
+  const possible = convertNodes(c.possible);
   if (!c.possible && c.requirements) {
     const { ethics, authorities } = c.requirements;
     if (ethics?.length) {
-      const node: ListNode = {
-        id: crypto.randomUUID(),
-        type: "list",
+      possible.push({
+        id: uid(),
+        type: "block",
         key: "ethics",
-        entries: [{ mode: "value", values: ethics }],
-      };
-      possible.push(node);
+        children: ethics.map((v) => ({ id: uid(), type: "value", value: v })),
+      });
     }
     if (authorities?.length) {
-      const node: ListNode = {
-        id: crypto.randomUUID(),
-        type: "list",
+      const vals = authorities.map((v) => ({ id: uid(), type: "value" as const, value: v }));
+      possible.push({
+        id: uid(),
+        type: "block",
         key: "authority",
-        entries: [
-          { mode: authorities.length > 1 ? "OR" : "value", values: authorities },
-        ],
-      };
-      possible.push(node);
+        children:
+          authorities.length > 1
+            ? [{ id: uid(), type: "op", op: "OR", children: vals }]
+            : vals,
+      });
     }
   }
   return {
     ...c,
     noPrefix: c.noPrefix ?? false,
-    potential: c.potential ?? [],
+    potential: convertNodes(c.potential),
     possible,
-    aiWeight: c.aiWeight ?? defaultAiWeight(),
+    aiWeight: migrateAiWeight(c.aiWeight),
   };
 }
 

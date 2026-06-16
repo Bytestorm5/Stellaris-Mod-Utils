@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Dialog, Button, Icon } from "../ds";
+import { Dialog, Button } from "../ds";
 import { ETHICS, AUTHORITIES } from "../lib/modifiers";
-import type { CondNode, ListEntry, ListNode } from "../types";
+import { newBlock, newValue } from "../lib/conditions";
+import type { BlockNode, CondNode, OpNode } from "../types";
+import AssignList from "./AssignList";
 
-type Tri = "none" | "in" | "out"; // in = require/allow, out = exclude
+type Tri = "in" | "out";
 
 interface Props {
   open: boolean;
@@ -15,24 +17,36 @@ interface Props {
 
 const uid = () => crypto.randomUUID();
 
-/** Read prefill state for one list key from existing nodes. */
-function readState(nodes: CondNode[], key: ListNode["key"]) {
+function opWith(op: OpNode["op"], values: string[]): OpNode {
+  return { id: uid(), type: "op", op, children: values.map((v) => newValue(v)) };
+}
+
+/** Reconstruct assign-state + require-mode from an existing list block. */
+function readBlock(nodes: CondNode[], key: BlockNode["key"]) {
   const node = nodes.find(
-    (n): n is ListNode => n.type === "list" && n.key === key,
+    (n): n is BlockNode => n.type === "block" && n.key === key,
   );
   const state: Record<string, Tri> = {};
-  let requireMode: "any" | "all" = "any";
+  let mode: "any" | "all" = "any";
   if (node) {
-    for (const e of node.entries) {
-      if (e.mode === "NOR" || e.mode === "NOT") {
-        for (const v of e.values) state[v] = "out";
-      } else {
-        if (e.mode === "value") requireMode = "all";
-        for (const v of e.values) state[v] = "in";
+    for (const child of node.children) {
+      if (child.type === "value") {
+        state[child.value] = "in";
+        mode = "all";
+      } else if (child.type === "op") {
+        const vals = child.children
+          .filter((c) => c.type === "value")
+          .map((c) => (c as { value: string }).value);
+        if (child.op === "NOR" || child.op === "NOT") {
+          for (const v of vals) state[v] = "out";
+        } else {
+          for (const v of vals) state[v] = "in";
+          mode = "any";
+        }
       }
     }
   }
-  return { state, requireMode };
+  return { state, mode };
 }
 
 export default function EthicsAuthorityWizard({
@@ -46,58 +60,56 @@ export default function EthicsAuthorityWizard({
   const [ethicsMode, setEthicsMode] = useState<"any" | "all">("any");
   const [authorities, setAuthorities] = useState<Record<string, Tri>>({});
 
-  // Prefill from existing nodes whenever the wizard opens.
   useEffect(() => {
     if (!open) return;
-    const e = readState(nodes, "ethics");
-    const a = readState(nodes, "authority");
+    const e = readBlock(nodes, "ethics");
+    const a = readBlock(nodes, "authority");
     setEthics(e.state);
-    setEthicsMode(e.requireMode);
+    setEthicsMode(e.mode);
     setAuthorities(a.state);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cycle = (
-    setter: React.Dispatch<React.SetStateAction<Record<string, Tri>>>,
-    key: string,
-  ) =>
-    setter((s) => {
-      const next: Tri =
-        s[key] === "in" ? "out" : s[key] === "out" ? "none" : "in";
-      return { ...s, [key]: next };
-    });
+  const set =
+    (setter: React.Dispatch<React.SetStateAction<Record<string, Tri>>>) =>
+    (key: string, value: string | null) =>
+      setter((s) => {
+        const next = { ...s };
+        if (value === null) delete next[key];
+        else next[key] = value as Tri;
+        return next;
+      });
 
-  const buildListNode = (
-    key: ListNode["key"],
+  const buildBlock = (
+    key: BlockNode["key"],
     state: Record<string, Tri>,
     requireMode: "any" | "all",
-  ): ListNode | null => {
+  ): BlockNode | null => {
     const include = Object.keys(state).filter((k) => state[k] === "in");
     const exclude = Object.keys(state).filter((k) => state[k] === "out");
-    const entries: ListEntry[] = [];
+    const children: CondNode[] = [];
     if (include.length) {
-      entries.push({
-        mode: requireMode === "all" ? "value" : "OR",
-        values: include,
-      });
+      if (requireMode === "all") {
+        children.push(...include.map((v) => newValue(v)));
+      } else if (include.length === 1) {
+        children.push(newValue(include[0]));
+      } else {
+        children.push(opWith("OR", include));
+      }
     }
     if (exclude.length) {
-      entries.push({
-        mode: exclude.length > 1 ? "NOR" : "NOT",
-        values: exclude,
-      });
+      children.push(opWith(exclude.length > 1 ? "NOR" : "NOT", exclude));
     }
-    if (entries.length === 0) return null;
-    return { id: uid(), type: "list", key, entries };
+    if (children.length === 0) return null;
+    return { ...newBlock(key), children };
   };
 
   const apply = () => {
-    // Drop existing ethics/authority list nodes, then append rebuilt ones.
     const kept = nodes.filter(
-      (n) => !(n.type === "list" && (n.key === "ethics" || n.key === "authority")),
+      (n) =>
+        !(n.type === "block" && (n.key === "ethics" || n.key === "authority")),
     );
-    const ethicsNode = buildListNode("ethics", ethics, ethicsMode);
-    // Authority is single-valued in-game, so allowed entries are always "one of".
-    const authNode = buildListNode("authority", authorities, "any");
+    const ethicsNode = buildBlock("ethics", ethics, ethicsMode);
+    const authNode = buildBlock("authority", authorities, "any");
     onApply([
       ...kept,
       ...(ethicsNode ? [ethicsNode] : []),
@@ -106,30 +118,13 @@ export default function EthicsAuthorityWizard({
     onClose();
   };
 
-  const chip = (
-    label: string,
-    state: Tri,
-    onClick: () => void,
-  ) => (
-    <button
-      key={label}
-      type="button"
-      className={`wz-chip wz-chip--${state}`}
-      onClick={onClick}
-    >
-      {state === "in" && <Icon name="Plus" size={13} />}
-      {state === "out" && <Icon name="Trash2" size={13} />}
-      {label}
-    </button>
-  );
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
       size="lg"
       title="Ethics & authority"
-      subtitle={`Build the common requirement structure for "${block}". Click to cycle: neutral → require → exclude.`}
+      subtitle={`Build the common requirement structure for "${block}". The result is added as normal, editable conditions.`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -147,7 +142,7 @@ export default function EthicsAuthorityWizard({
             <label className="smu-eyebrow">Ethics</label>
             <span className="spacer" />
             <span className="wz-mode">
-              Require mode:
+              Require:
               <button
                 type="button"
                 className={`wz-seg ${ethicsMode === "any" ? "on" : ""}`}
@@ -164,24 +159,34 @@ export default function EthicsAuthorityWizard({
               </button>
             </span>
           </div>
-          <div className="wz-chips">
-            {ETHICS.map((e) =>
-              chip(e.name, ethics[e.key] ?? "none", () => cycle(setEthics, e.key)),
-            )}
-          </div>
+          <AssignList
+            items={ETHICS}
+            value={ethics}
+            onChange={set(setEthics)}
+            searchPlaceholder="Search ethics…"
+            height={210}
+            states={[
+              { value: "in", label: "Require", tone: "in" },
+              { value: "out", label: "Exclude", tone: "out" },
+            ]}
+          />
         </div>
 
         <div>
           <label className="smu-eyebrow" style={{ display: "block", marginBottom: 8 }}>
             Authority — allowed are treated as “one of”
           </label>
-          <div className="wz-chips">
-            {AUTHORITIES.map((a) =>
-              chip(a.name, authorities[a.key] ?? "none", () =>
-                cycle(setAuthorities, a.key),
-              ),
-            )}
-          </div>
+          <AssignList
+            items={AUTHORITIES}
+            value={authorities}
+            onChange={set(setAuthorities)}
+            searchPlaceholder="Search authorities…"
+            height={170}
+            states={[
+              { value: "in", label: "Allow", tone: "in" },
+              { value: "out", label: "Exclude", tone: "out" },
+            ]}
+          />
         </div>
       </div>
     </Dialog>

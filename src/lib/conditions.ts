@@ -2,15 +2,26 @@ import triggersData from "../data/triggers.json";
 import scopesData from "../data/scopes.json";
 import personalitiesData from "../data/personalities.json";
 import type {
+  BlockNode,
   CondNode,
   IteratorNode,
-  ListEntry,
   NamedEntry,
   OpNode,
   ScopeNode,
 } from "../types";
 
-type ContainerNode = OpNode | ScopeNode | IteratorNode;
+type ContainerNode = OpNode | ScopeNode | IteratorNode | BlockNode;
+
+/** Pseudo-scope inside a civic list block (`ethics = { … }`): only values + operators. */
+export const LIST_SCOPE = "__list__";
+
+/** Civic-specific list-syntax blocks, addable in country scope. */
+export const CIVIC_BLOCKS: { key: BlockNode["key"]; desc: string }[] = [
+  { key: "ethics", desc: "Constrain the empire's ethics" },
+  { key: "authority", desc: "Constrain the empire's authority" },
+  { key: "civics", desc: "Constrain the empire's other civics" },
+  { key: "country_type", desc: "Constrain the country type" },
+];
 
 /* ---------------- Data ---------------- */
 
@@ -76,6 +87,8 @@ export function childScope(node: CondNode, parentScope: string): string {
   switch (node.type) {
     case "op":
       return parentScope;
+    case "block":
+      return LIST_SCOPE;
     case "scope":
       return SCOPE_BY_KEY.get(node.key)?.to ?? parentScope;
     case "iterator":
@@ -86,7 +99,12 @@ export function childScope(node: CondNode, parentScope: string): string {
 }
 
 export function isContainer(node: CondNode): node is ContainerNode {
-  return node.type === "op" || node.type === "scope" || node.type === "iterator";
+  return (
+    node.type === "op" ||
+    node.type === "scope" ||
+    node.type === "iterator" ||
+    node.type === "block"
+  );
 }
 
 /* ---------------- Factories ---------------- */
@@ -110,6 +128,14 @@ export function newTrigger(def: TriggerDef): CondNode {
   const value =
     def.valueType === "bool" ? "yes" : def.valueType === "number" ? "0" : "";
   return { id: uid(), type: "trigger", key: def.key, comparator, value };
+}
+
+export function newBlock(key: BlockNode["key"]): BlockNode {
+  return { id: uid(), type: "block", key, children: [] };
+}
+
+export function newValue(value = ""): CondNode {
+  return { id: uid(), type: "value", value };
 }
 
 /* ---------------- Immutable tree edits ---------------- */
@@ -164,8 +190,10 @@ export function nodeLabel(node: CondNode): string {
       return node.key;
     case "trigger":
       return TRIGGER_BY_KEY.get(node.key)?.desc ?? node.key;
-    case "list":
+    case "block":
       return node.key;
+    case "value":
+      return `value = ${node.value}`;
   }
 }
 
@@ -173,36 +201,17 @@ export function nodeLabel(node: CondNode): string {
 
 const tab = (n: number) => "\t".repeat(n);
 
-function serializeList(
-  key: string,
-  entries: ListEntry[],
-  depth: number,
-): string {
-  const inner = entries
-    .map((e) => {
-      if (e.mode === "value") {
-        return e.values.map((v) => `${tab(depth + 1)}value = ${v}`).join("\n");
-      }
-      const vals = e.values
-        .map((v) => `${tab(depth + 2)}value = ${v}`)
-        .join("\n");
-      return `${tab(depth + 1)}${e.mode} = {\n${vals}\n${tab(depth + 1)}}`;
-    })
-    .filter(Boolean)
-    .join("\n");
-  return `${tab(depth)}${key} = {\n${inner}\n${tab(depth)}}`;
-}
-
 export function serializeNode(node: CondNode, depth: number): string {
   switch (node.type) {
     case "trigger":
       return `${tab(depth)}${node.key} ${node.comparator} ${node.value || "yes"}`;
-    case "list":
-      return serializeList(node.key, node.entries, depth);
+    case "value":
+      return `${tab(depth)}value = ${node.value}`;
     case "op": {
       const body = serializeNodes(node.children, depth + 1);
       return `${tab(depth)}${node.op} = {\n${body}\n${tab(depth)}}`;
     }
+    case "block":
     case "scope":
     case "iterator": {
       const body = serializeNodes(node.children, depth + 1);

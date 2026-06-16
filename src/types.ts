@@ -53,20 +53,19 @@ export interface TriggerNode {
   value: string;
 }
 
-export type ListEntryMode = "value" | "OR" | "NOT" | "NOR";
-
-/** One sub-clause of a civic list-syntax block. */
-export interface ListEntry {
-  mode: ListEntryMode;
-  values: string[];
+/** Civic list-syntax container (`ethics = { … }`); children are value/operator nodes. */
+export interface BlockNode {
+  id: string;
+  type: "block";
+  key: "ethics" | "authority" | "civics" | "country_type";
+  children: CondNode[];
 }
 
-/** Civic-specific list syntax (`ethics = { value = … }`), produced by the wizard. */
-export interface ListNode {
+/** A bare `value = X` entry, used inside list-syntax blocks. */
+export interface ValueNode {
   id: string;
-  type: "list";
-  key: "ethics" | "authority" | "civics" | "country_type";
-  entries: ListEntry[];
+  type: "value";
+  value: string;
 }
 
 export type CondNode =
@@ -74,20 +73,22 @@ export type CondNode =
   | ScopeNode
   | IteratorNode
   | TriggerNode
-  | ListNode;
+  | BlockNode
+  | ValueNode;
 
 /* ---------------- AI weight ---------------- */
 
-export interface AiWeightGroup {
-  /** Multiplier applied when the empire matches one of these personalities. */
-  factor: number;
-  personalities: string[];
-}
-
+/**
+ * AI selection weighting. Personalities are bucketed; the actual factors defer
+ * to the game's standard scripted variables, so we don't expose numbers.
+ */
 export interface AiWeight {
-  base: number;
-  match: AiWeightGroup;
-  mismatch: AiWeightGroup;
+  /** Personalities that favour this civic (`@ai_civic_personality_match_factor`). */
+  match: string[];
+  /** Personalities that disfavour it (`@ai_civic_personality_mismatch_factor`). */
+  mismatch: string[];
+  /** Personalities that must never pick it (`@ai_civic_personality_forbid_factor`). */
+  forbid: string[];
 }
 
 export interface Civic {

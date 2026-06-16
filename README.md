@@ -37,13 +37,15 @@ light themes, vendored under `src/ds/`).
   **scope-aware**: it only offers what's valid in the scope you're adding to,
   and each container tracks the scope its children evaluate in. Backed by the
   ~840 triggers and ~90 scope links parsed from the docs.
-- **Ethics / authority wizard** — over `potential` and `possible`, a modal where
-  you whitelist/blacklist ethics and authorities (the most common structure).
-  On apply it autofills the civic list-syntax condition (`ethics = { … }`,
-  `authority = { … }`).
-- **AI weight** — an abstracted editor: pick AI personalities that *match* (more
-  likely) or *conflict* (less likely) with the civic, with editable factors,
-  emitted as the standard `ai_weight = { modifier = { factor … OR { … } } }`.
+- **Ethics / authority wizard** — over `potential` and `possible`, a modal with
+  a compact, searchable assign-list where you require/exclude ethics and
+  allow/exclude authorities (the most common structure). On apply it inserts the
+  result as **normal, editable condition nodes** (`ethics = { … }`,
+  `authority = { … }`) — not an opaque blob — so you can tweak them afterwards.
+- **AI weight** — pick AI personalities for three buckets: *match*, *mismatch*,
+  and *forbid*. Factors defer to the game's standard scripted variables
+  (`@ai_civic_personality_match_factor`, …), so there are no numbers to fiddle
+  with; it emits the standard `ai_weight = { base … modifier { factor … } }`.
 - **Icons** — upload a PNG/JPG; it's converted to an uncompressed 128×128
   `.dds` and placed at the path Stellaris expects.
 - **One-click export** — produces a proper mod folder:
@@ -103,8 +105,9 @@ copyrighted); only the curated JSON it produces is. The extractor reads:
 | `src/lib/modifiers.ts` | Loads data, categories, value interpretation |
 | `src/lib/conditions.ts` | Trigger/scope data, scope resolution, tree edits + PDX serialization |
 | `src/components/conditions/` | Condition-tree builder (builder, recursive node, add-picker) |
-| `src/components/EthicsAuthorityWizard.tsx` | Whitelist/blacklist wizard |
-| `src/components/AiWeightEditor.tsx` | AI personality match/mismatch editor |
+| `src/components/AssignList.tsx` | Searchable multi-state picker (replaces tag walls) |
+| `src/components/EthicsAuthorityWizard.tsx` | Require/exclude wizard → editable nodes |
+| `src/components/AiWeightEditor.tsx` | AI personality match/mismatch/forbid buckets |
 | `src/lib/pdxExport.ts` | Civic `.txt` / `.yml` / descriptor generation + id-prefix logic |
 | `src/lib/dds.ts` | PNG/JPG → uncompressed `.dds` encoder |
 | `src/lib/zip.ts` | Assembles the downloadable mod `.zip` (JSZip) |

@@ -53,24 +53,30 @@ function renderCondBlock(name: string, nodes: Civic["possible"]): string {
   return `\t${name} = {\n${serializeNodes(nodes, 2)}\n\t}\n`;
 }
 
-const DEFAULT_AI = { base: 1, matchFactor: 2, mismatchFactor: 0.25 };
+// AI weight factors defer to the game's standard scripted variables.
+const AI_FACTORS = {
+  match: "@ai_civic_personality_match_factor",
+  mismatch: "@ai_civic_personality_mismatch_factor",
+  forbid: "@ai_civic_personality_forbid_factor",
+} as const;
 
-/** Render the `ai_weight = { ... }` block, or "" if it would be trivial. */
+/** Render the `ai_weight = { ... }` block, or "" if no personalities are bucketed. */
 function renderAiWeight(ai: AiWeight): string {
   const groups: string[] = [];
-  for (const g of [ai.match, ai.mismatch]) {
-    if (g.personalities.length === 0) continue;
-    const checks = g.personalities
+  for (const bucket of ["match", "mismatch", "forbid"] as const) {
+    const personalities = ai[bucket];
+    if (personalities.length === 0) continue;
+    const checks = personalities
       .map((p) => `\t\t\t\thas_ai_personality = ${p}`)
       .join("\n");
     groups.push(
-      `\t\tmodifier = {\n\t\t\tfactor = ${num(g.factor)}\n\t\t\tOR = {\n${checks}\n\t\t\t}\n\t\t}`,
+      `\t\tmodifier = {\n\t\t\tfactor = ${AI_FACTORS[bucket]}\n\t\t\tOR = {\n${checks}\n\t\t\t}\n\t\t}`,
     );
   }
-  if (groups.length === 0 && ai.base === DEFAULT_AI.base) return "";
-  return `\tai_weight = {\n\t\tbase = ${num(ai.base)}\n${groups.join("\n")}${
-    groups.length ? "\n" : ""
-  }\t}\n`;
+  if (groups.length === 0) return "";
+  return `\tai_weight = {\n\t\tbase = @ai_civic_default_base_weight\n${groups.join(
+    "\n",
+  )}\n\t}\n`;
 }
 
 /** Generate the full civics .txt file content for the project. */
@@ -92,7 +98,7 @@ export function generateCivicsFile(project: ModProject): string {
       potential +
       possible +
       modifierBlock +
-      `\trandom_weight = { base = 1 }\n` +
+      `\trandom_weight = { base = @civic_default_random_weight }\n` +
       aiWeight +
       `}\n`
     );

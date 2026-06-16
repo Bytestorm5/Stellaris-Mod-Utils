@@ -24,8 +24,9 @@ const TYPE_TONE = {
   op: "accent",
   scope: "info",
   iterator: "warning",
+  block: "success",
   trigger: "neutral",
-  list: "success",
+  value: "neutral",
 } as const;
 
 export default function ConditionNode({
@@ -39,7 +40,7 @@ export default function ConditionNode({
 
   const remove = (
     <IconButton size="sm" label="Remove" onClick={() => onRemove(node.id)}>
-      <Icon name="Trash2" size={14} />
+      <Icon name="X" size={15} />
     </IconButton>
   );
 
@@ -69,7 +70,7 @@ export default function ConditionNode({
           ) : (
             <code className="cond__key">{nodeLabel(node)}</code>
           )}
-          {node.type !== "op" && (
+          {(node.type === "scope" || node.type === "iterator") && (
             <span className="cond__scope">scope: {inner}</span>
           )}
           <span className="spacer" />
@@ -111,18 +112,21 @@ export default function ConditionNode({
     );
   }
 
-  if (node.type === "list") {
-    const summary = node.entries
-      .map((e) =>
-        e.mode === "value"
-          ? `all of: ${e.values.join(", ")}`
-          : `${e.mode}: ${e.values.join(", ")}`,
-      )
-      .join("  ·  ");
+  if (node.type === "value") {
     return (
       <div className="cond cond--leaf">
-        <Badge tone="success">{node.key}</Badge>
-        <span className="cond__summary">{summary || "(empty)"}</span>
+        <code className="cond__key">value</code>
+        <span className="cond__eq">=</span>
+        <Input
+          size="sm"
+          mono
+          className="cond__value"
+          placeholder="e.g. ethic_militarist"
+          value={node.value}
+          onChange={(e) =>
+            onUpdate(node.id, (n) => ({ ...n, value: e.target.value }))
+          }
+        />
         <span className="spacer" />
         {remove}
       </div>

@@ -3,6 +3,8 @@ import { Dialog, Input, Tag, Badge, Icon } from "../../ds";
 import type { CondNode } from "../../types";
 import {
   OPERATORS,
+  CIVIC_BLOCKS,
+  LIST_SCOPE,
   scopeLinksFor,
   iteratorsFor,
   valueTriggersFor,
@@ -10,6 +12,8 @@ import {
   newScope,
   newIterator,
   newTrigger,
+  newBlock,
+  newValue,
 } from "../../lib/conditions";
 
 interface Props {
@@ -19,7 +23,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Cat = "all" | "operator" | "scope" | "iterator" | "check";
+type Cat = "all" | "operator" | "list" | "value" | "scope" | "iterator" | "check";
 
 interface Option {
   cat: Exclude<Cat, "all">;
@@ -48,6 +52,8 @@ export default function AddConditionDialog({
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<Cat>("all");
 
+  const isList = scope === LIST_SCOPE;
+
   const options = useMemo<Option[]>(() => {
     const out: Option[] = [];
     for (const op of OPERATORS) {
@@ -58,6 +64,28 @@ export default function AddConditionDialog({
         desc: OP_DESC[op],
         make: () => newOp(op),
       });
+    }
+    if (isList) {
+      // Inside a civic list block, the only leaf is `value = X`.
+      out.push({
+        cat: "value",
+        key: "value",
+        title: "value = …",
+        desc: "A literal value entry (e.g. an ethic or authority key).",
+        make: () => newValue(),
+      });
+      return out;
+    }
+    if (scope === "country") {
+      for (const b of CIVIC_BLOCKS) {
+        out.push({
+          cat: "list",
+          key: b.key,
+          title: b.key,
+          desc: b.desc,
+          make: () => newBlock(b.key),
+        });
+      }
     }
     for (const s of scopeLinksFor(scope)) {
       out.push({
@@ -87,7 +115,7 @@ export default function AddConditionDialog({
       });
     }
     return out;
-  }, [scope]);
+  }, [scope, isList]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -102,13 +130,20 @@ export default function AddConditionDialog({
     return out;
   }, [options, query, cat]);
 
-  const cats: { id: Cat; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "operator", label: "Operators" },
-    { id: "scope", label: "Scope changes" },
-    { id: "iterator", label: "Iterators" },
-    { id: "check", label: "Checks" },
-  ];
+  const cats: { id: Cat; label: string }[] = isList
+    ? [
+        { id: "all", label: "All" },
+        { id: "operator", label: "Operators" },
+        { id: "value", label: "Values" },
+      ]
+    : [
+        { id: "all", label: "All" },
+        { id: "operator", label: "Operators" },
+        { id: "list", label: "Civic lists" },
+        { id: "scope", label: "Scope changes" },
+        { id: "iterator", label: "Iterators" },
+        { id: "check", label: "Checks" },
+      ];
 
   const tone = (c: Option["cat"]) =>
     c === "operator"
@@ -117,7 +152,9 @@ export default function AddConditionDialog({
         ? "info"
         : c === "iterator"
           ? "warning"
-          : "neutral";
+          : c === "list"
+            ? "success"
+            : "neutral";
 
   return (
     <Dialog
@@ -158,7 +195,7 @@ export default function AddConditionDialog({
             className="picker-result"
             onClick={() => {
               onAdd(o.make());
-              if (o.cat !== "check") onClose();
+              if (o.cat !== "check" && o.cat !== "value") onClose();
             }}
           >
             <Badge tone={tone(o.cat)}>{o.cat}</Badge>
