@@ -61,29 +61,44 @@ export default function ConditionNode({
         <div className="cond__head">
           <span className="cond__type">{node.type}</span>
           {node.type === "op" ? (
-            <select
-              className="cond-select"
-              value={node.op}
-              onChange={(e) =>
-                onUpdate(node.id, (n) => ({
-                  ...(n as OpNode),
-                  op: e.target.value as OpNode["op"],
-                }))
-              }
-            >
-              {OPS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                className="cond-select"
+                value={node.op}
+                onChange={(e) =>
+                  onUpdate(node.id, (n) => ({
+                    ...(n as OpNode),
+                    op: e.target.value as OpNode["op"],
+                  }))
+                }
+              >
+                {OPS.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="cond-text"
+                placeholder="tooltip text (optional)"
+                value={node.text ?? ""}
+                onChange={(e) =>
+                  onUpdate(node.id, (n) => ({
+                    ...(n as OpNode),
+                    text: e.target.value || undefined,
+                  }))
+                }
+              />
+            </>
           ) : (
-            <code className="cond__key">{nodeLabel(node)}</code>
+            <>
+              <code className="cond__key">{nodeLabel(node)}</code>
+              {(node.type === "scope" || node.type === "iterator") && (
+                <span className="cond__scope">→ {inner}</span>
+              )}
+              <span className="spacer" />
+            </>
           )}
-          {(node.type === "scope" || node.type === "iterator") && (
-            <span className="cond__scope">→ {inner}</span>
-          )}
-          <span className="spacer" />
           <IconButton
             size="sm"
             label="Add child condition"

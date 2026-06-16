@@ -10,6 +10,16 @@ Everything runs client-side — no backend, no uploads. Your work is saved in
 your browser automatically. The UI is built on the SMU design system (dark +
 light themes, vendored under `src/ds/`).
 
+## Object types
+
+Civics and **origins** are both supported (an origin is a civic with
+`is_origin = yes` plus a `picture`, optional `starting_colony`, and
+`habitability_preference`). They're picked from the sidebar's **Types** tab and
+share the same editor; origins add their extra fields and export an explicit
+`icon = "gfx/interface/icons/origins/<key>.dds"`. The object-type registry
+(`src/objectTypes.ts`) and the reusable condition/wizard components are built so
+new civic-like types slot in with minimal plumbing.
+
 ## App structure
 
 - **Top bar** — brand, project summary, theme toggle, **Mod settings**, and
@@ -40,7 +50,10 @@ light themes, vendored under `src/ds/`).
   **context-aware autocomplete** — an `ethics` value suggests ethics, a
   `has_civic` value suggests civics (vanilla *and* your own mod's), etc., drawn
   from a categorized identifier set (ethics, authorities, civics, country types,
-  traits, technologies, personalities, modifiers).
+  traits, technologies, personalities, planet classes, pictures, modifiers).
+  Each operator also has an optional **tooltip text** field (the `text =` custom
+  tooltip for opposing clauses); free text there is auto-assigned a localisation
+  key and emitted alongside the condition.
 - **Ethics / authority wizard** — over `potential` and `possible`, a modal with
   a compact, searchable list. Pick **Whitelist** (only the selected are allowed)
   or **Blacklist** (the selected are barred, the rest fine) per section. On apply

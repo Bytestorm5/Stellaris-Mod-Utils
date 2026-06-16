@@ -12,6 +12,8 @@ interface Props {
   activeType: string;
   onSelectType: (id: string) => void;
   civics: Civic[];
+  typeLabel: string;
+  newLabel: string;
   activeCivicId: string;
   onSelectCivic: (id: string) => void;
   onAddCivic: () => void;
@@ -25,12 +27,12 @@ export default function Sidebar({
   activeType,
   onSelectType,
   civics,
+  typeLabel,
+  newLabel,
   activeCivicId,
   onSelectCivic,
   onAddCivic,
 }: Props) {
-  const activeTypeDef = OBJECT_TYPES.find((t) => t.id === activeType);
-
   if (collapsed) {
     return (
       <aside className="sidebar sidebar--collapsed">
@@ -102,11 +104,11 @@ export default function Sidebar({
         </div>
       ) : (
         <div className="sidebar__scroll">
-          <div className="sidebar__section-label">
-            {activeTypeDef?.label ?? "Inventory"}
-          </div>
+          <div className="sidebar__section-label">{typeLabel}</div>
           {civics.length === 0 && (
-            <div className="empty">No civics yet. Create your first below.</div>
+            <div className="empty">
+              Nothing here yet. Create your first below.
+            </div>
           )}
           {civics.map((c) => (
             <div
@@ -137,7 +139,7 @@ export default function Sidebar({
             onClick={onAddCivic}
             style={{ marginTop: "var(--space-2)" }}
           >
-            New civic
+            {newLabel}
           </Button>
         </div>
       )}

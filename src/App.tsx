@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import type { AiWeight, BlockNode, Civic, CondNode, ModProject } from "./types";
+import type {
+  AiWeight,
+  BlockNode,
+  Civic,
+  CivicKind,
+  CondNode,
+  ModProject,
+} from "./types";
 import TopBar from "./components/TopBar";
 import Sidebar, { type SidebarTab } from "./components/Sidebar";
 import ModSettingsDialog from "./components/ModSettingsDialog";
@@ -18,11 +25,13 @@ function defaultAiWeight(): AiWeight {
 
 const uid = () => crypto.randomUUID();
 
-function newCivic(index: number): Civic {
-  const name = `New Civic ${index}`;
+function newCivic(kind: CivicKind, index: number): Civic {
+  const isOrigin = kind === "origin";
+  const name = `New ${isOrigin ? "Origin" : "Civic"} ${index}`;
   return {
     id: uid(),
-    key: toKey("civic_", name),
+    kind,
+    key: toKey(isOrigin ? "origin_" : "civic_", name),
     noPrefix: false,
     name,
     description: "",
@@ -31,6 +40,9 @@ function newCivic(index: number): Civic {
     possible: [],
     aiWeight: defaultAiWeight(),
     iconDataUrl: null,
+    ...(isOrigin
+      ? { picture: "", startingColony: "", habitabilityPreference: "" }
+      : {}),
   };
 }
 
@@ -117,6 +129,7 @@ function migrateCivic(c: Civic & LegacyCivic): Civic {
   }
   return {
     ...c,
+    kind: c.kind ?? "civic",
     noPrefix: c.noPrefix ?? false,
     potential: convertNodes(c.potential),
     possible,
@@ -131,7 +144,7 @@ function defaultProject(): ModProject {
     version: "0.1.0",
     supportedVersion: "4.0.*",
     idPrefix: "",
-    civics: [newCivic(1)],
+    civics: [newCivic("civic", 1)],
   };
 }
 
@@ -196,8 +209,10 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Inventory of the currently selected object type.
+  const inventory = project.civics.filter((c) => c.kind === activeType);
   const active =
-    project.civics.find((c) => c.id === activeId) ?? project.civics[0];
+    inventory.find((c) => c.id === activeId) ?? inventory[0] ?? null;
 
   const updateCivic = (updated: Civic) =>
     setProject((p) => ({
@@ -207,7 +222,8 @@ export default function App() {
 
   const addCivic = () =>
     setProject((p) => {
-      const civic = newCivic(p.civics.length + 1);
+      const count = p.civics.filter((c) => c.kind === activeType).length;
+      const civic = newCivic(activeType as CivicKind, count + 1);
       setActiveId(civic.id);
       setTab("inventory");
       return { ...p, civics: [...p.civics, civic] };
@@ -216,13 +232,15 @@ export default function App() {
   const deleteCivic = (id: string) =>
     setProject((p) => {
       const civics = p.civics.filter((c) => c.id !== id);
-      const next = civics.length ? civics : [newCivic(1)];
-      setActiveId(next[0].id);
-      return { ...p, civics: next };
+      const remaining = civics.filter((c) => c.kind === activeType);
+      setActiveId(remaining[0]?.id ?? "");
+      return { ...p, civics };
     });
 
   const selectType = (id: string) => {
     setActiveType(id);
+    const first = project.civics.find((c) => c.kind === id);
+    setActiveId(first?.id ?? "");
     setTab("inventory");
   };
 
@@ -239,10 +257,8 @@ export default function App() {
     }
   };
 
-  const totalModifiers = project.civics.reduce(
-    (n, c) => n + c.modifiers.length,
-    0,
-  );
+  const civicCount = project.civics.filter((c) => c.kind === "civic").length;
+  const originCount = project.civics.filter((c) => c.kind === "origin").length;
   const activeTypeDef = OBJECT_TYPES.find((t) => t.id === activeType);
 
   return (
@@ -258,7 +274,7 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         onExport={exportMod}
         exporting={exporting}
-        summary={`${project.civics.length} civics · ${totalModifiers} modifiers`}
+        summary={`${civicCount} civics · ${originCount} origins`}
       />
 
       <div className="body">
@@ -271,7 +287,9 @@ export default function App() {
           onTabChange={setTab}
           activeType={activeType}
           onSelectType={selectType}
-          civics={project.civics}
+          civics={inventory}
+          typeLabel={activeTypeDef?.label ?? "Objects"}
+          newLabel={activeType === "origin" ? "New origin" : "New civic"}
           activeCivicId={active?.id ?? ""}
           onSelectCivic={setActiveId}
           onAddCivic={addCivic}
@@ -290,20 +308,20 @@ export default function App() {
             <div className="empty-screen">
               <div className="empty-screen__inner">
                 <div className="empty-screen__orb">
-                  <Icon name="Boxes" size={34} />
+                  <Icon name={activeTypeDef?.icon ?? "Boxes"} size={34} />
                 </div>
                 <h1 style={{ fontSize: "var(--text-xl)" }}>
-                  Pick an object type
+                  No {activeTypeDef?.label.toLowerCase() ?? "objects"} yet
                 </h1>
                 <p style={{ color: "var(--text-muted)" }}>
-                  Choose what to build from the sidebar. Civics are ready now.
+                  {activeTypeDef?.blurb ?? "Pick an object type from the sidebar."}
                 </p>
                 <Button
                   variant="secondary"
                   leadingIcon={<Icon name="Plus" size={16} />}
                   onClick={addCivic}
                 >
-                  New civic
+                  {activeType === "origin" ? "New origin" : "New civic"}
                 </Button>
               </div>
             </div>

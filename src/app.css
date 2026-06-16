@@ -688,6 +688,35 @@ body,
   border-color: var(--accent);
 }
 
+/* Operator tooltip-text input */
+.cond-text {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 26px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  padding: 0 8px;
+  outline: none;
+}
+
+.cond-text::placeholder {
+  color: var(--text-faint);
+}
+
+.cond-text:focus {
+  border-color: var(--accent);
+}
+
+.id-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-body);
+}
+
 .wz-explain {
   font-size: var(--text-xs);
   color: var(--text-muted);

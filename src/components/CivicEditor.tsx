@@ -9,7 +9,9 @@ import type {
 import { MODIFIER_BY_KEY, interpret, isMultiplier } from "../lib/modifiers";
 import { toKey, normalizePrefix, effectiveCivicKey } from "../lib/pdxExport";
 import { Card, Input, Textarea, Switch, Button, IconButton, Icon } from "../ds";
+import { identifierPool, type Category } from "../lib/identifiers";
 import ModifierPicker from "./ModifierPicker";
+import IdentifierInput from "./IdentifierInput";
 import ConditionBuilder from "./conditions/ConditionBuilder";
 import EthicsAuthorityWizard from "./EthicsAuthorityWizard";
 import AiWeightEditor from "./AiWeightEditor";
@@ -85,7 +87,9 @@ export default function CivicEditor({
     <div className="editor">
       <div className="editor__head">
         <div style={{ flex: 1 }}>
-          <p className="smu-eyebrow">// CIVIC</p>
+          <p className="smu-eyebrow">
+            // {civic.kind === "origin" ? "ORIGIN" : "CIVIC"}
+          </p>
           <h1>{civic.name || "Untitled civic"}</h1>
         </div>
       </div>
@@ -108,9 +112,39 @@ export default function CivicEditor({
           <Textarea
             label="Description"
             value={civic.description}
-            placeholder="Describe what this civic does, in your own words."
+            placeholder={`Describe what this ${civic.kind} does, in your own words.`}
             onChange={(e) => patch({ description: e.target.value })}
           />
+
+          {civic.kind === "origin" && (
+            <>
+              <IdField
+                label="Picture"
+                category="picture"
+                value={civic.picture ?? ""}
+                placeholder="e.g. GFX_evt_metropolis"
+                hint="The large image shown on the origin selection screen."
+                onChange={(v) => patch({ picture: v })}
+              />
+              <div className="field-grid">
+                <IdField
+                  label="Starting colony"
+                  category="planet_class"
+                  value={civic.startingColony ?? ""}
+                  placeholder="e.g. pc_ocean (optional)"
+                  onChange={(v) => patch({ startingColony: v })}
+                />
+                <IdField
+                  label="Habitability preference"
+                  category="planet_class"
+                  value={civic.habitabilityPreference ?? ""}
+                  placeholder="e.g. pc_ocean (optional)"
+                  onChange={(v) => patch({ habitabilityPreference: v })}
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <div className="smu-eyebrow" style={{ marginBottom: 8 }}>
               Icon
@@ -142,7 +176,13 @@ export default function CivicEditor({
                   )}
                 </div>
                 <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                  PNG/JPG — converted to a 128×128 .dds on export.
+                  PNG/JPG — converted to a 128×128 .dds at{" "}
+                  <code>
+                    {civic.kind === "origin"
+                      ? "icons/origins/"
+                      : "icons/governments/civics/"}
+                  </code>{" "}
+                  on export.
                 </span>
                 <input
                   ref={fileRef}
@@ -306,6 +346,41 @@ export default function CivicEditor({
         }
         onClose={() => setWizardBlock(null)}
       />
+    </div>
+  );
+}
+
+/** A labelled identifier field with autocomplete (for origin picture/colony). */
+function IdField({
+  label,
+  category,
+  value,
+  placeholder,
+  hint,
+  onChange,
+}: {
+  label: string;
+  category: Category;
+  value: string;
+  placeholder?: string;
+  hint?: string;
+  onChange: (v: string) => void;
+}) {
+  const options = useMemo(() => identifierPool(category, []), [category]);
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      <label className="id-label">{label}</label>
+      <IdentifierInput
+        value={value}
+        onChange={onChange}
+        options={options}
+        placeholder={placeholder}
+      />
+      {hint && (
+        <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+          {hint}
+        </span>
+      )}
     </div>
   );
 }

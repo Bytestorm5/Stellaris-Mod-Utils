@@ -2,7 +2,7 @@ import identifiersData from "../data/identifiers.json";
 import { MODIFIERS } from "./modifiers";
 import type { NamedEntry } from "../types";
 
-type Category =
+export type Category =
   | "ethic"
   | "authority"
   | "civic"
@@ -10,6 +10,8 @@ type Category =
   | "trait"
   | "technology"
   | "personality"
+  | "planet_class"
+  | "picture"
   | "modifier";
 
 const DATA = identifiersData as Record<string, NamedEntry[]>;
@@ -22,6 +24,8 @@ const POOLS: Record<Category, NamedEntry[]> = {
   trait: DATA.trait ?? [],
   technology: DATA.technology ?? [],
   personality: DATA.personality ?? [],
+  planet_class: DATA.planet_class ?? [],
+  picture: DATA.picture ?? [],
   modifier: MODIFIERS.map((m) => ({ key: m.key, name: m.name })),
 };
 

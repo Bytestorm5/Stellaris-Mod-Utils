@@ -21,17 +21,17 @@ export const OBJECT_TYPES: ObjectTypeDef[] = [
     available: true,
   },
   {
+    id: "origin",
+    label: "Origins",
+    blurb: "A civic with a starting picture, colony, and signature modifiers.",
+    icon: "GitBranch",
+    available: true,
+  },
+  {
     id: "trait",
     label: "Species traits",
     blurb: "Pop-level modifiers with a point cost.",
     icon: "Dna",
-    available: false,
-  },
-  {
-    id: "origin",
-    label: "Origins",
-    blurb: "Starting conditions and a signature modifier set.",
-    icon: "GitBranch",
     available: false,
   },
 ];

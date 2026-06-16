@@ -7,6 +7,7 @@ import {
   generateCivicsFile,
   generateDescriptor,
   generateLocalisation,
+  originIconPath,
   toKey,
 } from "./pdxExport";
 import { imageDataUrlToDds } from "./dds";
@@ -44,13 +45,12 @@ export async function buildModZip(project: ModProject): Promise<Blob> {
     if (!civic.iconDataUrl) continue;
     const dds = await imageDataUrlToDds(civic.iconDataUrl, 128);
     if (dds) {
-      dir.file(
-        `gfx/interface/icons/governments/civics/${effectiveCivicKey(
-          project,
-          civic,
-        )}.dds`,
-        dds,
-      );
+      const key = effectiveCivicKey(project, civic);
+      const path =
+        civic.kind === "origin"
+          ? originIconPath(key)
+          : `gfx/interface/icons/governments/civics/${key}.dds`;
+      dir.file(path, dds);
     }
   }
 

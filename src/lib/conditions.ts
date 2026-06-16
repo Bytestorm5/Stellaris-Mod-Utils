@@ -201,25 +201,54 @@ export function nodeLabel(node: CondNode): string {
 
 const tab = (n: number) => "\t".repeat(n);
 
-export function serializeNode(node: CondNode, depth: number): string {
+/** Resolves a free-text tooltip into a localisation key, or "" for a literal. */
+export type TextResolver = (text: string) => string;
+
+function escapeText(s: string): string {
+  return `"${s.replace(/"/g, '\\"')}"`;
+}
+
+function wrapBlock(
+  key: string,
+  depth: number,
+  inner: string[],
+): string {
+  const body = inner.filter(Boolean).join("\n");
+  return `${tab(depth)}${key} = {\n${body}\n${tab(depth)}}`;
+}
+
+export function serializeNode(
+  node: CondNode,
+  depth: number,
+  registerText?: TextResolver,
+): string {
   switch (node.type) {
     case "trigger":
       return `${tab(depth)}${node.key} ${node.comparator} ${node.value || "yes"}`;
     case "value":
       return `${tab(depth)}value = ${node.value}`;
     case "op": {
-      const body = serializeNodes(node.children, depth + 1);
-      return `${tab(depth)}${node.op} = {\n${body}\n${tab(depth)}}`;
+      const inner: string[] = [];
+      if (node.text) {
+        const ref = registerText ? registerText(node.text) : escapeText(node.text);
+        inner.push(`${tab(depth + 1)}text = ${ref}`);
+      }
+      inner.push(serializeNodes(node.children, depth + 1, registerText));
+      return wrapBlock(node.op, depth, inner);
     }
     case "block":
     case "scope":
-    case "iterator": {
-      const body = serializeNodes(node.children, depth + 1);
-      return `${tab(depth)}${node.key} = {\n${body}\n${tab(depth)}}`;
-    }
+    case "iterator":
+      return wrapBlock(node.key, depth, [
+        serializeNodes(node.children, depth + 1, registerText),
+      ]);
   }
 }
 
-export function serializeNodes(nodes: CondNode[], depth: number): string {
-  return nodes.map((n) => serializeNode(n, depth)).join("\n");
+export function serializeNodes(
+  nodes: CondNode[],
+  depth: number,
+  registerText?: TextResolver,
+): string {
+  return nodes.map((n) => serializeNode(n, depth, registerText)).join("\n");
 }

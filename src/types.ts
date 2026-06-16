@@ -26,6 +26,8 @@ export interface OpNode {
   type: "op";
   op: "AND" | "OR" | "NOR" | "NAND" | "NOT";
   children: CondNode[];
+  /** Optional custom tooltip text shown when this clause is active. */
+  text?: string;
 }
 
 /** Scope-change link (e.g. `owner = { ... }`); children evaluate in the new scope. */
@@ -91,9 +93,14 @@ export interface AiWeight {
   forbid: string[];
 }
 
+/** Civics and origins share this structure (origins are civics with is_origin=yes). */
+export type CivicKind = "civic" | "origin";
+
 export interface Civic {
   /** Stable internal id for UI list rendering (not exported). */
   id: string;
+  /** Whether this is a plain civic or an origin. */
+  kind: CivicKind;
   /** Base script key derived from the name, e.g. `civic_my_glorious_people`. */
   key: string;
   /** When true, the mod-wide id prefix is NOT applied (for overriding base-game objects). */
@@ -111,6 +118,14 @@ export interface Civic {
   aiWeight: AiWeight;
   /** Data-URL of an uploaded icon image, or null. */
   iconDataUrl: string | null;
+
+  /* ---- Origin-only fields ---- */
+  /** GFX sprite key shown as the origin's large picture (e.g. `GFX_evt_metropolis`). */
+  picture?: string;
+  /** Planet class the empire starts on (e.g. `pc_ocean`). */
+  startingColony?: string;
+  /** Preferred habitability planet class. */
+  habitabilityPreference?: string;
 }
 
 export interface ModProject {

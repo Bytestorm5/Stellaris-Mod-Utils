@@ -316,6 +316,27 @@ const named = (keys) =>
 
 const isDoc = (f) => f.startsWith("000_") || f.includes("documentation");
 
+/** GFX sprite keys (e.g. event pictures) defined across interface/*.gfx. */
+function gfxKeys(re) {
+  const keys = new Set();
+  const dir = path.join(DUMP, "interface");
+  if (!fs.existsSync(dir)) return [];
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(".gfx")) continue;
+    const text = fs.readFileSync(path.join(dir, file), "utf8");
+    for (const m of text.matchAll(/name\s*=\s*"(GFX_[A-Za-z0-9_]+)"/g)) {
+      if (re.test(m[1])) keys.add(m[1]);
+    }
+  }
+  return [...keys].sort();
+}
+
+const prettyGfx = (key) =>
+  key
+    .replace(/^GFX_(evt_)?/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
 const identifiers = {
   ethic: ethics,
   authority: authorities,
@@ -324,6 +345,8 @@ const identifiers = {
   country_type: named(dirKeys("common/country_types", /^[a-z]/, isDoc)),
   trait: named(dirKeys("common/traits", /^trait_/, isDoc)),
   technology: named(dirKeys("common/technology", /^tech_/, isDoc)),
+  planet_class: named(dirKeys("common/planet_classes", /^pc_/, isDoc)),
+  picture: gfxKeys(/^GFX_evt_/).map((key) => ({ key, name: prettyGfx(key) })),
 };
 
 /* ------------------------------------------------------------------ */

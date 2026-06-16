@@ -10,7 +10,8 @@ interface Props {
   scope: string;
   localIds: NamedEntry[];
   onChange: (nodes: CondNode[]) => void;
-  onOpenWizard: () => void;
+  /** Optional domain wizard (e.g. ethics/authority for civics). */
+  onOpenWizard?: () => void;
 }
 
 export default function ConditionBuilder({
@@ -35,14 +36,16 @@ export default function ConditionBuilder({
           Root is an implicit <code>AND</code> in <code>{scope}</code> scope.
         </span>
         <span className="spacer" />
-        <Button
-          variant="secondary"
-          size="sm"
-          leadingIcon={<Icon name="Sparkles" size={14} />}
-          onClick={onOpenWizard}
-        >
-          Ethics / authority wizard
-        </Button>
+        {onOpenWizard && (
+          <Button
+            variant="secondary"
+            size="sm"
+            leadingIcon={<Icon name="Sparkles" size={14} />}
+            onClick={onOpenWizard}
+          >
+            Ethics / authority wizard
+          </Button>
+        )}
         <Button
           variant="primary"
           size="sm"
