@@ -368,3 +368,40 @@ write("scopes.json", scopes);
 write("triggers.json", triggers);
 write("personalities.json", personalities);
 write("identifiers.json", identifiers);
+
+/* ------------------------------------------------------------------ */
+/* Markup — loc text colors (§) and inline icons (£) for the editor    */
+/* ------------------------------------------------------------------ */
+
+const colors = [];
+{
+  const fonts = path.join(DUMP, "interface", "fonts.gfx");
+  if (fs.existsSync(fonts)) {
+    const text = fs.readFileSync(fonts, "utf8");
+    const block = text.match(/textcolors\s*=\s*\{([\s\S]*?)\n\t\}/);
+    if (block) {
+      for (const line of block[1].split(/\r?\n/)) {
+        const m = line.match(
+          /^\s*([A-Za-z0-9_])\s*=\s*\{\s*(\d+)\s+(\d+)\s+(\d+)\s*\}\s*(?:#\s*(.*))?/,
+        );
+        if (!m) continue;
+        const code = m[1];
+        const rgb = [Number(m[2]), Number(m[3]), Number(m[4])];
+        // Label = first phrase of the comment after "X = ".
+        let label = code;
+        if (m[5]) {
+          const c = m[5].replace(/^[A-Za-z0-9_]\s*=\s*/, "");
+          label = (c.split(/[.,]/)[0] || code).trim();
+        }
+        colors.push({ code, rgb, label });
+      }
+    }
+  }
+}
+
+// Inline £icon£ keys come from GFX_text_<key> sprites; drop single-char glyphs.
+const icons = gfxKeys(/^GFX_text_/)
+  .map((k) => k.replace(/^GFX_text_/, ""))
+  .filter((k) => k.length > 1 && k !== "alt");
+
+write("markup.json", { colors, icons });

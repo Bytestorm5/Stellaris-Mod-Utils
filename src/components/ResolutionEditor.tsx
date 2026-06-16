@@ -1,6 +1,7 @@
 import type { ModProject, Resolution } from "../types";
 import { toKey, effectiveKey } from "../lib/pdxExport";
-import { Card, Input, Textarea, Button, Icon } from "../ds";
+import { Card, Input, Button, Icon } from "../ds";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import ModifiersSection from "./ModifiersSection";
 import PrefixToggle from "./PrefixToggle";
 import { IdField } from "./CivicEditor";
@@ -34,11 +35,11 @@ export default function ResolutionEditor({
 
       <Card padded>
         <div className="stack">
-          <Input
+          <RichTextInput
             label="Name"
             value={resolution.name}
             placeholder="e.g. Galactic Trade Accord"
-            onChange={(e) => setName(e.target.value)}
+            onChange={setName}
             hint={
               <>
                 Exported id:{" "}
@@ -46,11 +47,11 @@ export default function ResolutionEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={resolution.description}
             placeholder="Describe the resolution's effect."
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
           <Input
             label="Icon (GFX key)"

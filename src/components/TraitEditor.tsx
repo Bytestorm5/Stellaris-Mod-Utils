@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import type { ModProject, NamedEntry, Trait, TraitKind } from "../types";
 import { toKey, effectiveKey } from "../lib/pdxExport";
-import { Card, Input, Textarea, Button, Icon } from "../ds";
+import { Card, Input, Button, Icon } from "../ds";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import { ARCHETYPES, LEADER_CLASSES, identifierPool } from "../lib/identifiers";
 import IconUpload from "./IconUpload";
 import ModifiersSection from "./ModifiersSection";
@@ -74,11 +75,11 @@ export default function TraitEditor({
             </span>
           </div>
 
-          <Input
+          <RichTextInput
             label="Name"
             value={trait.name}
             placeholder="e.g. Stellar Forgers"
-            onChange={(e) => setName(e.target.value)}
+            onChange={setName}
             hint={
               <>
                 Exported id:{" "}
@@ -86,11 +87,11 @@ export default function TraitEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={trait.description}
             placeholder="Describe the trait."
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
           <div className="field-grid">
             <Input

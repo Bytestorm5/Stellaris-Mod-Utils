@@ -13,6 +13,7 @@ import {
   identifierPool,
 } from "../../lib/identifiers";
 import IdentifierInput from "../IdentifierInput";
+import RichTextEditor from "../RichTextEditor";
 import AddConditionDialog from "./AddConditionDialog";
 
 interface Props {
@@ -40,6 +41,7 @@ export default function ConditionNode({
   onAddChild,
 }: Props) {
   const [adding, setAdding] = useState(false);
+  const [richOpen, setRichOpen] = useState(false);
 
   const remove = (
     <IconButton size="sm" label="Remove" onClick={() => onRemove(node.id)}>
@@ -88,6 +90,25 @@ export default function ConditionNode({
                     text: e.target.value || undefined,
                   }))
                 }
+              />
+              <IconButton
+                size="sm"
+                label="Open rich text editor"
+                onClick={() => setRichOpen(true)}
+              >
+                <Icon name="Paintbrush" size={14} />
+              </IconButton>
+              <RichTextEditor
+                open={richOpen}
+                value={node.text ?? ""}
+                title="Edit tooltip text"
+                onSave={(text) =>
+                  onUpdate(node.id, (n) => ({
+                    ...(n as OpNode),
+                    text: text || undefined,
+                  }))
+                }
+                onClose={() => setRichOpen(false)}
               />
             </>
           ) : (

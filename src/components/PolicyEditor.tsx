@@ -5,7 +5,8 @@ import type {
   PolicyOption,
 } from "../types";
 import { toKey, effectiveKey } from "../lib/pdxExport";
-import { Card, Input, Textarea, Button, IconButton, Icon } from "../ds";
+import { Card, Input, Button, IconButton, Icon } from "../ds";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import ModifiersSection from "./ModifiersSection";
 import ConditionBuilder from "./conditions/ConditionBuilder";
 import PrefixToggle from "./PrefixToggle";
@@ -63,11 +64,11 @@ export default function PolicyEditor({
 
       <Card padded>
         <div className="stack">
-          <Input
+          <RichTextInput
             label="Name"
             value={policy.name}
             placeholder="e.g. Trade Doctrine"
-            onChange={(e) => setName(e.target.value)}
+            onChange={setName}
             hint={
               <>
                 Exported id:{" "}
@@ -75,11 +76,11 @@ export default function PolicyEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={policy.description}
             placeholder="Describe the policy."
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
         </div>
       </Card>
@@ -139,14 +140,11 @@ export default function PolicyEditor({
             {policy.options.map((opt) => (
               <div key={opt.id} className="policy-option">
                 <div className="policy-option__head">
-                  <Input
+                  <RichTextInput
                     value={opt.name}
                     placeholder="Option name"
-                    onChange={(e) =>
-                      updateOption(opt.id, {
-                        name: e.target.value,
-                        key: toKey("", e.target.value),
-                      })
+                    onChange={(name) =>
+                      updateOption(opt.id, { name, key: toKey("", name) })
                     }
                   />
                   <IconButton

@@ -1,7 +1,8 @@
 import type { ModProject, NamedEntry, PlanetBuilding } from "../types";
 import { toKey, effectiveKey } from "../lib/pdxExport";
 import { BUILDING_CATEGORIES } from "../lib/identifiers";
-import { Card, Input, Textarea, Button, Icon } from "../ds";
+import { Card, Button, Icon } from "../ds";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import IconUpload from "./IconUpload";
 import ModifiersSection from "./ModifiersSection";
 import ResourcesEditor from "./ResourcesEditor";
@@ -38,13 +39,11 @@ export default function PlanetBuildingEditor({
 
       <Card padded>
         <div className="stack">
-          <Input
+          <RichTextInput
             label="Name"
             value={building.name}
             placeholder="e.g. Stellar Foundry"
-            onChange={(e) =>
-              patch({ name: e.target.value, key: toKey("building_", e.target.value) })
-            }
+            onChange={(name) => patch({ name, key: toKey("building_", name) })}
             hint={
               <>
                 Exported id:{" "}
@@ -52,11 +51,11 @@ export default function PlanetBuildingEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={building.description}
             placeholder="Describe the building."
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
           <LabeledSelect
             label="Category"

@@ -43,6 +43,14 @@ building blocks (`ModifiersSection`, `ConditionBuilder`, `IconUpload`,
 `AssignList`, `IdentifierInput`, `PrefixToggle`) shared across every editor —
 so new types slot in with minimal plumbing.
 
+## Rich text
+
+User-facing text fields (names, descriptions, condition tooltip text) accept
+Stellaris localisation markup. Type it directly, or click the brush icon to open
+a rich editor with a palette of the game's real text colors (`§…§!`) and a
+searchable inline-icon picker (`£…£`), plus a live preview. Event-only data
+functions (`[...]`) and key refs (`$...$`) are intentionally out of scope.
+
 ## App structure
 
 - **Top bar** — brand, project summary, theme toggle, **Mod settings**, and

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import type { Civic, CondNode, ModProject, NamedEntry } from "../types";
 import { toKey, effectiveCivicKey } from "../lib/pdxExport";
-import { Card, Input, Textarea, Button, Icon } from "../ds";
+import { Card, Button, Icon } from "../ds";
 import { identifierPool, type Category } from "../lib/identifiers";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import IdentifierInput from "./IdentifierInput";
 import IconUpload from "./IconUpload";
 import ModifiersSection from "./ModifiersSection";
@@ -53,11 +54,11 @@ export default function CivicEditor({
 
       <Card padded>
         <div className="stack">
-          <Input
+          <RichTextInput
             label="Name"
             value={civic.name}
             placeholder="e.g. Star-Forged Artisans"
-            onChange={(e) => setName(e.target.value)}
+            onChange={setName}
             hint={
               <>
                 Exported id:{" "}
@@ -65,11 +66,11 @@ export default function CivicEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={civic.description}
             placeholder={`Describe what this ${civic.kind} does, in your own words.`}
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
 
           {isOrigin && (

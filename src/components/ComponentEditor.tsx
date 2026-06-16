@@ -6,7 +6,8 @@ import {
   WEAPON_TYPES,
   identifierPool,
 } from "../lib/identifiers";
-import { Card, Input, Textarea, Button, Icon } from "../ds";
+import { Card, Input, Button, Icon } from "../ds";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import ModifiersSection from "./ModifiersSection";
 import QuickModifiers from "./QuickModifiers";
 import ResourcesEditor from "./ResourcesEditor";
@@ -84,13 +85,11 @@ export default function ComponentEditor({
             </span>
           </div>
 
-          <Input
+          <RichTextInput
             label="Name"
             value={component.name}
             placeholder="e.g. Crystalline Plating"
-            onChange={(e) =>
-              patch({ name: e.target.value, key: toComponentKey(e.target.value) })
-            }
+            onChange={(name) => patch({ name, key: toComponentKey(name) })}
             hint={
               <>
                 Exported key:{" "}
@@ -98,11 +97,11 @@ export default function ComponentEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={component.description}
             placeholder="Describe the component."
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
           <div className="field-grid">
             <LabeledSelect

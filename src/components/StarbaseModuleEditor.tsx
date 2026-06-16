@@ -1,7 +1,8 @@
 import type { ModProject, NamedEntry, StarbaseModule } from "../types";
 import { toKey, effectiveKey } from "../lib/pdxExport";
 import { STARBASE_TYPES } from "../lib/identifiers";
-import { Card, Input, Textarea, Button, Icon } from "../ds";
+import { Card, Input, Button, Icon } from "../ds";
+import { RichTextInput, RichTextArea } from "./RichTextField";
 import ModifiersSection from "./ModifiersSection";
 import ResourcesEditor from "./ResourcesEditor";
 import ConditionBuilder from "./conditions/ConditionBuilder";
@@ -37,13 +38,11 @@ export default function StarbaseModuleEditor({
 
       <Card padded>
         <div className="stack">
-          <Input
+          <RichTextInput
             label="Name"
             value={module.name}
             placeholder="e.g. Hydroponics Bay"
-            onChange={(e) =>
-              patch({ name: e.target.value, key: toKey("", e.target.value) })
-            }
+            onChange={(name) => patch({ name, key: toKey("", name) })}
             hint={
               <>
                 Exported id:{" "}
@@ -51,11 +50,11 @@ export default function StarbaseModuleEditor({
               </>
             }
           />
-          <Textarea
+          <RichTextArea
             label="Description"
             value={module.description}
             placeholder="Describe the starbase module."
-            onChange={(e) => patch({ description: e.target.value })}
+            onChange={(description) => patch({ description })}
           />
           <div className="field-grid">
             <LabeledSelect
