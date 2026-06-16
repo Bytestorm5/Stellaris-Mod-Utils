@@ -8,6 +8,8 @@ import ModifiersSection from "./ModifiersSection";
 import ResourcesEditor from "./ResourcesEditor";
 import ConditionBuilder from "./conditions/ConditionBuilder";
 import LabeledSelect from "./LabeledSelect";
+import BuildingJobsEditor from "./BuildingJobsEditor";
+import TechPrereqs from "./TechPrereqs";
 import PrefixToggle from "./PrefixToggle";
 
 interface Props {
@@ -102,6 +104,26 @@ export default function PlanetBuildingEditor({
           onChange={(countryModifiers) => patch({ countryModifiers })}
         />
       </Card>
+
+      <Card padded>
+        <div className="section-bar">
+          <h2>Provides jobs</h2>
+          <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
+            job slots added to the planet
+          </span>
+        </div>
+        <BuildingJobsEditor
+          project={project}
+          jobs={building.jobs}
+          onChange={(jobs) => patch({ jobs })}
+        />
+      </Card>
+
+      <TechPrereqs
+        project={project}
+        value={building.prerequisites}
+        onChange={(prerequisites) => patch({ prerequisites })}
+      />
 
       <Card padded>
         <div className="section-bar">

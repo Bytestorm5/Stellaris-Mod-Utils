@@ -1,18 +1,13 @@
-import { useMemo } from "react";
-import type { Component, ComponentKind, ModProject, NamedEntry } from "../types";
+import type { Component, ComponentKind, ModProject } from "../types";
 import { effectiveKey } from "../lib/pdxExport";
-import {
-  COMPONENT_SIZES,
-  WEAPON_TYPES,
-  identifierPool,
-} from "../lib/identifiers";
+import { COMPONENT_SIZES, WEAPON_TYPES } from "../lib/identifiers";
 import { Card, Input, Button, Icon } from "../ds";
 import { RichTextInput, RichTextArea } from "./RichTextField";
 import ModifiersSection from "./ModifiersSection";
 import QuickModifiers from "./QuickModifiers";
 import ResourcesEditor from "./ResourcesEditor";
-import AssignList from "./AssignList";
 import LabeledSelect from "./LabeledSelect";
+import TechPrereqs from "./TechPrereqs";
 import PrefixToggle from "./PrefixToggle";
 
 interface Props {
@@ -49,13 +44,6 @@ export default function ComponentEditor({
   const patch = (p: Partial<Component>) => onChange({ ...component, ...p });
   const finalKey = effectiveKey(project, component);
   const isWeapon = component.kind === "weapon";
-
-  const techPool = useMemo<NamedEntry[]>(
-    () => identifierPool("technology", []),
-    [],
-  );
-  const prereqMap: Record<string, string> = {};
-  component.prerequisites.forEach((p) => (prereqMap[p] = "in"));
 
   return (
     <div className="editor">
@@ -326,28 +314,11 @@ export default function ComponentEditor({
         </>
       )}
 
-      <Card padded>
-        <div className="section-bar">
-          <h2>Prerequisites</h2>
-          <span className="smu-eyebrow" style={{ color: "var(--text-faint)" }}>
-            technologies that unlock it
-          </span>
-        </div>
-        <AssignList
-          items={techPool}
-          value={prereqMap}
-          onChange={(key, v) =>
-            patch({
-              prerequisites: v
-                ? [...component.prerequisites, key]
-                : component.prerequisites.filter((p) => p !== key),
-            })
-          }
-          searchPlaceholder="Search technologies…"
-          height={200}
-          states={[{ value: "in", label: "Require", tone: "in" }]}
-        />
-      </Card>
+      <TechPrereqs
+        project={project}
+        value={component.prerequisites}
+        onChange={(prerequisites) => patch({ prerequisites })}
+      />
 
       <PrefixToggle project={project} obj={component} onChange={patch} />
 

@@ -7,6 +7,7 @@ import ModifiersSection from "./ModifiersSection";
 import ResourcesEditor from "./ResourcesEditor";
 import ConditionBuilder from "./conditions/ConditionBuilder";
 import LabeledSelect from "./LabeledSelect";
+import TechPrereqs from "./TechPrereqs";
 import PrefixToggle from "./PrefixToggle";
 
 interface Props {
@@ -114,6 +115,12 @@ export default function StarbaseBuildingEditor({
           onChange={(potential) => patch({ potential })}
         />
       </Card>
+
+      <TechPrereqs
+        project={project}
+        value={building.prerequisites}
+        onChange={(prerequisites) => patch({ prerequisites })}
+      />
 
       <PrefixToggle project={project} obj={building} onChange={patch} />
 

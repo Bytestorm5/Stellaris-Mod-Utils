@@ -76,4 +76,18 @@ export const OBJECT_TYPES: ObjectTypeDef[] = [
     icon: "Orbit",
     available: true,
   },
+  {
+    id: "job",
+    label: "Jobs",
+    blurb: "Pop jobs with produced resources and upkeep.",
+    icon: "Users",
+    available: true,
+  },
+  {
+    id: "technology",
+    label: "Technologies",
+    blurb: "Researchable techs that gate components, buildings, and more.",
+    icon: "FlaskConical",
+    available: true,
+  },
 ];

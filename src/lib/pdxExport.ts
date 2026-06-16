@@ -10,10 +10,12 @@ import type {
   ModProject,
   PlanetBuilding,
   Policy,
+  PopJob,
   Resolution,
   ResourceAmount,
   StarbaseBuilding,
   StarbaseModule,
+  Technology,
   Trait,
 } from "../types";
 import { serializeNodes } from "./conditions";
@@ -305,7 +307,11 @@ export function buildPlanetBuilding(project: ModProject, b: PlanetBuilding) {
   if (b.prerequisites.length)
     parts.push(`\tprerequisites = { ${b.prerequisites.map((p) => `"${p}"`).join(" ")} }`);
   parts.push(renderResources(b.cost, b.upkeep, "planet_buildings"));
-  parts.push(renderModifiers(b.planetModifiers, 1, "planet_modifier"));
+  // Jobs the building provides become job_<key>_add planet modifiers.
+  const jobMods = b.jobs
+    .filter((j) => j.job)
+    .map((j) => ({ key: `job_${j.job}_add`, value: j.count }));
+  parts.push(renderModifiers([...b.planetModifiers, ...jobMods], 1, "planet_modifier"));
   parts.push(renderModifiers(b.countryModifiers, 1, "country_modifier"));
   return { block: joinBlock(key, parts), loc };
 }
@@ -317,6 +323,8 @@ export function buildStarbaseBuilding(project: ModProject, b: StarbaseBuilding) 
   if (b.icon) parts.push(`\ticon = "${b.icon}"`);
   parts.push(`\tconstruction_days = ${num(b.constructionDays)}`);
   parts.push(`\tstarbase_type = ${b.starbaseType}`);
+  if (b.prerequisites.length)
+    parts.push(`\tprerequisites = { ${b.prerequisites.map((p) => `"${p}"`).join(" ")} }`);
   parts.push(renderCondBlock("potential", b.potential, registerText));
   parts.push(renderResources(b.cost, b.upkeep, "starbase_buildings"));
   parts.push(renderModifiers(b.countryModifiers, 1, "country_modifier"));
@@ -331,9 +339,50 @@ export function buildStarbaseModule(project: ModProject, m: StarbaseModule) {
   if (m.section) parts.push(`\tsection = "${m.section}"`);
   parts.push(`\tconstruction_days = ${num(m.constructionDays)}`);
   parts.push(`\tstarbase_type = ${m.starbaseType}`);
+  if (m.prerequisites.length)
+    parts.push(`\tprerequisites = { ${m.prerequisites.map((p) => `"${p}"`).join(" ")} }`);
   parts.push(renderCondBlock("potential", m.potential, registerText));
   parts.push(renderResources(m.cost, m.upkeep, "starbase_modules"));
   parts.push(renderModifiers(m.countryModifiers, 1, "country_modifier"));
+  return { block: joinBlock(key, parts), loc };
+}
+
+export function buildPopJob(project: ModProject, job: PopJob) {
+  const key = effectiveKey(project, job);
+  const { loc } = locContext(key, job.name, job.description);
+  const parts: string[] = [`\tcategory = ${job.jobClass}`];
+  const sub = (label: string, list: ResourceAmount[]) =>
+    list.length
+      ? `\t\t${label} = {\n${list
+          .map((r) => `\t\t\t${r.resource} = ${num(r.amount)}`)
+          .join("\n")}\n\t\t}`
+      : "";
+  const res = [`\t\tcategory = planet_jobs`, sub("produces", job.produces), sub("upkeep", job.upkeep)]
+    .filter(Boolean)
+    .join("\n");
+  parts.push(`\tresources = {\n${res}\n\t}`);
+  return { block: joinBlock(key, parts), loc };
+}
+
+export function technologyIconPath(k: string): string {
+  return `gfx/interface/icons/technologies/${k}.dds`;
+}
+
+export function buildTechnology(project: ModProject, t: Technology) {
+  const key = effectiveKey(project, t);
+  const { loc } = locContext(key, t.name, t.description);
+  const parts: string[] = [
+    `\tarea = ${t.area}`,
+    `\ttier = ${num(t.tier)}`,
+    `\tcategory = { ${t.category} }`,
+    `\tcost = ${num(t.cost)}`,
+    `\tweight = ${num(t.weight)}`,
+  ];
+  if (t.startTech) parts.push(`\tstart_tech = yes`);
+  if (t.isRare) parts.push(`\tis_rare = yes`);
+  if (t.prerequisites.length)
+    parts.push(`\tprerequisites = { ${t.prerequisites.map((p) => `"${p}"`).join(" ")} }`);
+  parts.push(renderModifiers(t.modifiers));
   return { block: joinBlock(key, parts), loc };
 }
 
@@ -415,6 +464,18 @@ export function buildExport(project: ModProject): ExportBundle {
     const { block, loc: l } = buildStarbaseModule(project, m);
     add(`common/starbase_modules/00_${slug}_starbase_modules.txt`, block);
     loc.push(...l);
+  }
+  for (const j of project.jobs) {
+    const { block, loc: l } = buildPopJob(project, j);
+    add(`common/pop_jobs/00_${slug}_jobs.txt`, block);
+    loc.push(...l);
+  }
+  for (const t of project.technologies) {
+    const { block, loc: l } = buildTechnology(project, t);
+    add(`common/technology/00_${slug}_tech.txt`, block);
+    loc.push(...l);
+    if (t.iconDataUrl)
+      icons.push({ path: technologyIconPath(effectiveKey(project, t)), dataUrl: t.iconDataUrl });
   }
   // Resolutions only appear in-game once listed in a resolution_category.
   if (project.resolutions.length) {

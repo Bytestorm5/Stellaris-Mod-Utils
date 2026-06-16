@@ -13,6 +13,7 @@ export type Category =
   | "planet_class"
   | "picture"
   | "resolution_group"
+  | "job"
   | "modifier";
 
 const DATA = identifiersData as Record<string, NamedEntry[]>;
@@ -28,8 +29,45 @@ const POOLS: Record<Category, NamedEntry[]> = {
   planet_class: DATA.planet_class ?? [],
   picture: DATA.picture ?? [],
   resolution_group: DATA.resolution_group ?? [],
+  job: DATA.job ?? [],
   modifier: MODIFIERS.map((m) => ({ key: m.key, name: m.name })),
 };
+
+/** Job classes (the top-level `category` of a pop job). */
+export const JOB_CLASSES: NamedEntry[] = [
+  { key: "worker", name: "Worker" },
+  { key: "specialist", name: "Specialist" },
+  { key: "ruler", name: "Ruler" },
+  { key: "complex_drone", name: "Complex drone" },
+  { key: "menial_drone", name: "Menial drone" },
+  { key: "slave", name: "Slave" },
+  { key: "bio_trophy", name: "Bio-trophy" },
+  { key: "civilian", name: "Civilian" },
+];
+
+/** Research areas. */
+export const TECH_AREAS: NamedEntry[] = [
+  { key: "physics", name: "Physics" },
+  { key: "society", name: "Society" },
+  { key: "engineering", name: "Engineering" },
+];
+
+/** Technology categories. */
+export const TECH_CATEGORIES: NamedEntry[] = [
+  { key: "computing", name: "Computing" },
+  { key: "particles", name: "Particles" },
+  { key: "field_manipulation", name: "Field manipulation" },
+  { key: "psionics", name: "Psionics" },
+  { key: "biology", name: "Biology" },
+  { key: "military_theory", name: "Military theory" },
+  { key: "new_worlds", name: "New worlds" },
+  { key: "statecraft", name: "Statecraft" },
+  { key: "archaeostudies", name: "Archaeostudies" },
+  { key: "industry", name: "Industry" },
+  { key: "materials", name: "Materials" },
+  { key: "propulsion", name: "Propulsion" },
+  { key: "voidcraft", name: "Voidcraft" },
+];
 
 /** Species archetypes that may take a trait. */
 export const ARCHETYPES: NamedEntry[] = [
@@ -168,7 +206,7 @@ export function identifierPool(
   category: Category | undefined,
   localIds: NamedEntry[],
 ): NamedEntry[] {
+  // The mod's own objects are surfaced first, then vanilla entries.
   if (!category) return dedupe([...localIds, ...GLOBAL]);
-  if (category === "civic") return dedupe([...localIds, ...POOLS.civic]);
-  return POOLS[category];
+  return dedupe([...localIds, ...POOLS[category]]);
 }

@@ -345,6 +345,9 @@ const identifiers = {
   country_type: named(dirKeys("common/country_types", /^[a-z]/, isDoc)),
   trait: named(dirKeys("common/traits", /^trait_/, isDoc)),
   technology: named(dirKeys("common/technology", /^tech_/, isDoc)),
+  job: named(
+    dirKeys("common/pop_jobs", /^[a-z]/, (f) => isDoc(f) || f.includes("pretrigger")),
+  ),
   planet_class: named(dirKeys("common/planet_classes", /^pc_/, isDoc)),
   resolution_group: named(dirKeys("common/resolution_groups", /^[a-z]/, isDoc)),
   picture: gfxKeys(/^GFX_evt_/).map((key) => ({ key, name: prettyGfx(key) })),

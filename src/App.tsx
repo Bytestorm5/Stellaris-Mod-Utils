@@ -10,9 +10,11 @@ import type {
   NamedEntry,
   PlanetBuilding,
   Policy,
+  PopJob,
   Resolution,
   StarbaseBuilding,
   StarbaseModule,
+  Technology,
   Trait,
 } from "./types";
 import TopBar from "./components/TopBar";
@@ -26,6 +28,8 @@ import ComponentEditor from "./components/ComponentEditor";
 import PlanetBuildingEditor from "./components/PlanetBuildingEditor";
 import StarbaseBuildingEditor from "./components/StarbaseBuildingEditor";
 import StarbaseModuleEditor from "./components/StarbaseModuleEditor";
+import JobEditor from "./components/JobEditor";
+import TechnologyEditor from "./components/TechnologyEditor";
 import { Button, Icon } from "./ds";
 import { OBJECT_TYPES } from "./objectTypes";
 import { downloadModZip } from "./lib/zip";
@@ -39,7 +43,9 @@ type AnyObject =
   | Component
   | PlanetBuilding
   | StarbaseBuilding
-  | StarbaseModule;
+  | StarbaseModule
+  | PopJob
+  | Technology;
 type CollectionKey =
   | "civics"
   | "traits"
@@ -48,7 +54,9 @@ type CollectionKey =
   | "components"
   | "buildings"
   | "starbaseBuildings"
-  | "starbaseModules";
+  | "starbaseModules"
+  | "jobs"
+  | "technologies";
 
 const COLLECTION: Record<string, CollectionKey> = {
   civic: "civics",
@@ -60,6 +68,8 @@ const COLLECTION: Record<string, CollectionKey> = {
   building: "buildings",
   starbase_building: "starbaseBuildings",
   starbase_module: "starbaseModules",
+  job: "jobs",
+  technology: "technologies",
 };
 
 const STORAGE_KEY = "civic-forge-project-v2";
@@ -194,6 +204,7 @@ function newBuilding(index: number): PlanetBuilding {
     planetModifiers: [],
     countryModifiers: [],
     prerequisites: [],
+    jobs: [],
   };
 }
 
@@ -207,6 +218,37 @@ function newStarbaseBuilding(index: number): StarbaseBuilding {
     upkeep: [],
     potential: [],
     countryModifiers: [],
+    prerequisites: [],
+  };
+}
+
+function newJob(index: number): PopJob {
+  return {
+    ...baseObj("", "Job", index),
+    jobClass: "worker",
+    produces: [],
+    upkeep: [],
+  };
+}
+
+function newTechnology(index: number): Technology {
+  const name = `New Technology ${index}`;
+  return {
+    id: uid(),
+    key: toKey("tech_", name),
+    noPrefix: false,
+    name,
+    description: "",
+    iconDataUrl: null,
+    area: "physics",
+    category: "computing",
+    tier: 1,
+    cost: 2000,
+    weight: 100,
+    startTech: false,
+    isRare: false,
+    prerequisites: [],
+    modifiers: [],
   };
 }
 
@@ -221,6 +263,7 @@ function newStarbaseModule(index: number): StarbaseModule {
     upkeep: [],
     potential: [],
     countryModifiers: [],
+    prerequisites: [],
   };
 }
 
@@ -228,6 +271,14 @@ function newStarbaseModule(index: number): StarbaseModule {
 function normalizeComponent(c: Component): Component {
   const base = newComponent(0);
   return { ...base, ...c, kind: c.kind ?? "utility" };
+}
+
+/** Buildings/starbase objects predate jobs/prerequisites; fill defaults. */
+function normalizeBuilding(b: PlanetBuilding): PlanetBuilding {
+  return { ...b, prerequisites: b.prerequisites ?? [], jobs: b.jobs ?? [] };
+}
+function normalizeStarbase<T extends { prerequisites?: string[] }>(s: T): T {
+  return { ...s, prerequisites: s.prerequisites ?? [] };
 }
 
 /** Create a fresh object of the given type. */
@@ -239,6 +290,8 @@ function newObject(type: string, index: number): AnyObject {
   if (type === "building") return newBuilding(index);
   if (type === "starbase_building") return newStarbaseBuilding(index);
   if (type === "starbase_module") return newStarbaseModule(index);
+  if (type === "job") return newJob(index);
+  if (type === "technology") return newTechnology(index);
   return newCivic(type as CivicKind, index);
 }
 
@@ -348,6 +401,8 @@ function defaultProject(): ModProject {
     buildings: [],
     starbaseBuildings: [],
     starbaseModules: [],
+    jobs: [],
+    technologies: [],
   };
 }
 
@@ -369,9 +424,11 @@ function loadProject(): ModProject {
           policies: p.policies ?? [],
           resolutions: p.resolutions ?? [],
           components: (p.components ?? []).map(normalizeComponent),
-          buildings: p.buildings ?? [],
-          starbaseBuildings: p.starbaseBuildings ?? [],
-          starbaseModules: p.starbaseModules ?? [],
+          buildings: (p.buildings ?? []).map(normalizeBuilding),
+          starbaseBuildings: (p.starbaseBuildings ?? []).map(normalizeStarbase),
+          starbaseModules: (p.starbaseModules ?? []).map(normalizeStarbase),
+          jobs: p.jobs ?? [],
+          technologies: p.technologies ?? [],
         } as ModProject;
       }
     }
@@ -473,6 +530,8 @@ export default function App() {
     ...project.buildings,
     ...project.starbaseBuildings,
     ...project.starbaseModules,
+    ...project.jobs,
+    ...project.technologies,
   ].map((o) => ({ key: effectiveKey(project, o), name: o.name || o.key }));
 
   function subText(o: AnyObject): string {
@@ -681,6 +740,26 @@ function ObjectEditor({
         project={project}
         module={object as StarbaseModule}
         localIds={localIds}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "job") {
+    return (
+      <JobEditor
+        project={project}
+        job={object as PopJob}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "technology") {
+    return (
+      <TechnologyEditor
+        project={project}
+        technology={object as Technology}
         onChange={onChange}
         onDelete={onDelete}
       />

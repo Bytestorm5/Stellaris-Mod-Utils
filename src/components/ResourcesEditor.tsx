@@ -74,19 +74,27 @@ interface Props {
   cost: ResourceAmount[];
   upkeep: ResourceAmount[];
   onChange: (next: { cost: ResourceAmount[]; upkeep: ResourceAmount[] }) => void;
+  costLabel?: string;
+  upkeepLabel?: string;
 }
 
 /** Edits a `resources` cost + upkeep pair, shared across buildings/components. */
-export default function ResourcesEditor({ cost, upkeep, onChange }: Props) {
+export default function ResourcesEditor({
+  cost,
+  upkeep,
+  onChange,
+  costLabel = "Build cost",
+  upkeepLabel = "Upkeep",
+}: Props) {
   return (
     <div className="field-grid">
       <ResourceList
-        label="Build cost"
+        label={costLabel}
         list={cost}
         onChange={(c) => onChange({ cost: c, upkeep })}
       />
       <ResourceList
-        label="Upkeep"
+        label={upkeepLabel}
         list={upkeep}
         onChange={(u) => onChange({ cost, upkeep: u })}
       />

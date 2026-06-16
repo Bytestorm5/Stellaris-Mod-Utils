@@ -34,6 +34,13 @@ Picked from the sidebar's **Types** tab:
 - **Starbase buildings** & **starbase modules** — host type, construction days,
   cost/upkeep, country modifiers, and a starbase-scope `potential` (modules add
   a section slot).
+- **Jobs** — pop jobs with a class, produced resources, and upkeep. Planet
+  buildings have a "Provides jobs" picker (autocompletes vanilla + the mod's own
+  jobs) that exports as `job_<key>_add` planet modifiers.
+- **Technologies** — area/category/tier/cost/weight, modifiers, and tech
+  prerequisites. Components, planet buildings, starbase buildings, and starbase
+  modules all have a tech-prerequisites picker that includes the mod's own techs,
+  so modded content can be gated behind modded research.
 
 Each type exports to its own file under `common/` with a shared, BOM-prefixed
 localisation file and DDS icons. The whole pipeline is generic: an object-type

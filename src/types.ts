@@ -218,6 +218,48 @@ export interface ModProject {
   buildings: PlanetBuilding[];
   starbaseBuildings: StarbaseBuilding[];
   starbaseModules: StarbaseModule[];
+  jobs: PopJob[];
+  technologies: Technology[];
+}
+
+/** A pop job. */
+export interface PopJob {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  /** Job class: worker, specialist, ruler, complex_drone, … */
+  jobClass: string;
+  produces: ResourceAmount[];
+  upkeep: ResourceAmount[];
+}
+
+/** A researchable technology. */
+export interface Technology {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  iconDataUrl: string | null;
+  /** physics, society, or engineering. */
+  area: string;
+  /** Tech category (computing, biology, …). */
+  category: string;
+  tier: number;
+  cost: number;
+  weight: number;
+  startTech: boolean;
+  isRare: boolean;
+  prerequisites: string[];
+  modifiers: CivicModifier[];
+}
+
+/** A job slot a building provides. */
+export interface BuildingJob {
+  job: string;
+  count: number;
 }
 
 /** A `{ resource = amount }` entry inside a cost/upkeep block. */
@@ -294,6 +336,8 @@ export interface PlanetBuilding {
   countryModifiers: CivicModifier[];
   /** Technologies required to build it. */
   prerequisites: string[];
+  /** Jobs the building provides (exported as job_<key>_add planet modifiers). */
+  jobs: BuildingJob[];
 }
 
 /** Starbase building (built in a starbase slot). */
@@ -313,6 +357,8 @@ export interface StarbaseBuilding {
   /** `potential` condition tree (starbase scope). */
   potential: CondNode[];
   countryModifiers: CivicModifier[];
+  /** Technologies required to build it. */
+  prerequisites: string[];
 }
 
 /** Starbase module (built in a starbase section). */
@@ -331,6 +377,8 @@ export interface StarbaseModule {
   upkeep: ResourceAmount[];
   potential: CondNode[];
   countryModifiers: CivicModifier[];
+  /** Technologies required to build it. */
+  prerequisites: string[];
 }
 
 /** Anything with a prefix-applicable key. */
