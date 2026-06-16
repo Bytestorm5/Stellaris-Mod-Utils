@@ -346,6 +346,7 @@ const identifiers = {
   trait: named(dirKeys("common/traits", /^trait_/, isDoc)),
   technology: named(dirKeys("common/technology", /^tech_/, isDoc)),
   planet_class: named(dirKeys("common/planet_classes", /^pc_/, isDoc)),
+  resolution_group: named(dirKeys("common/resolution_groups", /^[a-z]/, isDoc)),
   picture: gfxKeys(/^GFX_evt_/).map((key) => ({ key, name: prettyGfx(key) })),
 };
 

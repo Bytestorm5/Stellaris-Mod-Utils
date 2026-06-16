@@ -37,10 +37,12 @@ export default function AssignList({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (i) => i.name.toLowerCase().includes(q) || i.key.includes(q),
-    );
+    const base = q
+      ? items.filter(
+          (i) => i.name.toLowerCase().includes(q) || i.key.includes(q),
+        )
+      : items;
+    return base.slice(0, 150);
   }, [items, query]);
 
   const assignedCount = Object.values(value).filter(Boolean).length;

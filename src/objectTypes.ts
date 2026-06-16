@@ -1,6 +1,6 @@
 import type { IconName } from "./ds";
 
-/** A kind of moddable object the builder can create. Civics ship first. */
+/** A kind of moddable object the builder can create. */
 export interface ObjectTypeDef {
   id: string;
   /** Plural label, e.g. "Civics". */
@@ -29,9 +29,23 @@ export const OBJECT_TYPES: ObjectTypeDef[] = [
   },
   {
     id: "trait",
-    label: "Species traits",
-    blurb: "Pop-level modifiers with a point cost.",
+    label: "Traits",
+    blurb: "Species or leader traits — modifiers with a point cost.",
     icon: "Dna",
-    available: false,
+    available: true,
+  },
+  {
+    id: "policy",
+    label: "Policies",
+    blurb: "A switchable policy with options, each applying modifiers.",
+    icon: "Scale",
+    available: true,
+  },
+  {
+    id: "resolution",
+    label: "Resolutions",
+    blurb: "Galactic community resolutions with a tier and modifiers.",
+    icon: "Globe",
+    available: true,
   },
 ];

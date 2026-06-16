@@ -128,6 +128,75 @@ export interface Civic {
   habitabilityPreference?: string;
 }
 
+/* ---------------- Traits (species + leader) ---------------- */
+
+export type TraitKind = "species" | "leader";
+
+export interface Trait {
+  id: string;
+  kind: TraitKind;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  iconDataUrl: string | null;
+  modifiers: CivicModifier[];
+  /** Trait point cost (can be negative for "weak" traits). */
+  cost: number;
+  /** Trait keys that cannot be combined with this one. */
+  opposites: string[];
+  /** Species traits: which archetypes may take it (BIOLOGICAL, MACHINE, …). */
+  archetypes: string[];
+  /** Leader traits: which leader classes may take it (commander, scientist, …). */
+  leaderClasses: string[];
+}
+
+/* ---------------- Policies ---------------- */
+
+export interface PolicyOption {
+  id: string;
+  /** Option key/slug (used for the loc key and policy flag). */
+  key: string;
+  name: string;
+  /** Optional GFX sprite key for the option icon. */
+  icon: string;
+  modifiers: CivicModifier[];
+  /** `valid` condition tree (country scope). */
+  valid: CondNode[];
+}
+
+export interface Policy {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  /** `potential` — whether the policy is shown (country scope). */
+  potential: CondNode[];
+  /** `allow` — whether the policy can be changed (country scope). */
+  allow: CondNode[];
+  options: PolicyOption[];
+}
+
+/* ---------------- Galactic resolutions ---------------- */
+
+export interface Resolution {
+  id: string;
+  key: string;
+  noPrefix: boolean;
+  name: string;
+  description: string;
+  /** GFX sprite key for the resolution icon. */
+  icon: string;
+  /** Resolution group it belongs to (e.g. `commerce_industry`). */
+  group: string;
+  /** Tier / level (1–5). */
+  level: number;
+  /** Influence cost to propose. */
+  influenceCost: number;
+  modifiers: CivicModifier[];
+}
+
 export interface ModProject {
   /** Mod name used in descriptor.mod and folder/file naming. */
   modName: string;
@@ -142,4 +211,13 @@ export interface ModProject {
    */
   idPrefix: string;
   civics: Civic[];
+  traits: Trait[];
+  policies: Policy[];
+  resolutions: Resolution[];
+}
+
+/** Anything with a prefix-applicable key. */
+export interface Keyed {
+  key: string;
+  noPrefix: boolean;
 }

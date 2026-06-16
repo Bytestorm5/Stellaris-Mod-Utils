@@ -12,6 +12,7 @@ export type Category =
   | "personality"
   | "planet_class"
   | "picture"
+  | "resolution_group"
   | "modifier";
 
 const DATA = identifiersData as Record<string, NamedEntry[]>;
@@ -26,8 +27,25 @@ const POOLS: Record<Category, NamedEntry[]> = {
   personality: DATA.personality ?? [],
   planet_class: DATA.planet_class ?? [],
   picture: DATA.picture ?? [],
+  resolution_group: DATA.resolution_group ?? [],
   modifier: MODIFIERS.map((m) => ({ key: m.key, name: m.name })),
 };
+
+/** Species archetypes that may take a trait. */
+export const ARCHETYPES: NamedEntry[] = [
+  { key: "BIOLOGICAL", name: "Biological" },
+  { key: "BOTANICAL", name: "Botanical" },
+  { key: "LITHOID", name: "Lithoid" },
+  { key: "MACHINE", name: "Machine" },
+  { key: "ROBOT", name: "Robot" },
+];
+
+/** Leader classes that may take a trait. */
+export const LEADER_CLASSES: NamedEntry[] = [
+  { key: "commander", name: "Commander" },
+  { key: "scientist", name: "Scientist" },
+  { key: "official", name: "Official" },
+];
 
 /** Lean global pool for fields with no recognized context (excludes modifiers). */
 const GLOBAL: NamedEntry[] = [

@@ -6,15 +6,33 @@ import type {
   CivicKind,
   CondNode,
   ModProject,
+  NamedEntry,
+  Policy,
+  Resolution,
+  Trait,
 } from "./types";
 import TopBar from "./components/TopBar";
-import Sidebar, { type SidebarTab } from "./components/Sidebar";
+import Sidebar, { type SidebarItem, type SidebarTab } from "./components/Sidebar";
 import ModSettingsDialog from "./components/ModSettingsDialog";
 import CivicEditor from "./components/CivicEditor";
+import TraitEditor from "./components/TraitEditor";
+import PolicyEditor from "./components/PolicyEditor";
+import ResolutionEditor from "./components/ResolutionEditor";
 import { Button, Icon } from "./ds";
 import { OBJECT_TYPES } from "./objectTypes";
 import { downloadModZip } from "./lib/zip";
-import { toKey } from "./lib/pdxExport";
+import { toKey, effectiveKey } from "./lib/pdxExport";
+
+type AnyObject = Civic | Trait | Policy | Resolution;
+type CollectionKey = "civics" | "traits" | "policies" | "resolutions";
+
+const COLLECTION: Record<string, CollectionKey> = {
+  civic: "civics",
+  origin: "civics",
+  trait: "traits",
+  policy: "policies",
+  resolution: "resolutions",
+};
 
 const STORAGE_KEY = "civic-forge-project-v2";
 const PREFS_KEY = "civic-forge-prefs-v1";
@@ -44,6 +62,62 @@ function newCivic(kind: CivicKind, index: number): Civic {
       ? { picture: "", startingColony: "", habitabilityPreference: "" }
       : {}),
   };
+}
+
+function newTrait(index: number): Trait {
+  const name = `New Trait ${index}`;
+  return {
+    id: uid(),
+    kind: "species",
+    key: toKey("trait_", name),
+    noPrefix: false,
+    name,
+    description: "",
+    iconDataUrl: null,
+    modifiers: [],
+    cost: 1,
+    opposites: [],
+    archetypes: [],
+    leaderClasses: [],
+  };
+}
+
+function newPolicy(index: number): Policy {
+  const name = `New Policy ${index}`;
+  return {
+    id: uid(),
+    key: toKey("", name),
+    noPrefix: false,
+    name,
+    description: "",
+    potential: [],
+    allow: [],
+    options: [],
+  };
+}
+
+function newResolution(index: number): Resolution {
+  const name = `New Resolution ${index}`;
+  return {
+    id: uid(),
+    key: toKey("resolution_", name),
+    noPrefix: false,
+    name,
+    description: "",
+    icon: "",
+    group: "",
+    level: 1,
+    influenceCost: 100,
+    modifiers: [],
+  };
+}
+
+/** Create a fresh object of the given type. */
+function newObject(type: string, index: number): AnyObject {
+  if (type === "trait") return newTrait(index);
+  if (type === "policy") return newPolicy(index);
+  if (type === "resolution") return newResolution(index);
+  return newCivic(type as CivicKind, index);
 }
 
 /** Legacy `list` node and ai-weight shapes from earlier versions. */
@@ -139,27 +213,35 @@ function migrateCivic(c: Civic & LegacyCivic): Civic {
 
 function defaultProject(): ModProject {
   return {
-    modName: "My Civic Mod",
+    modName: "My Stellaris Mod",
     author: "",
     version: "0.1.0",
     supportedVersion: "4.0.*",
     idPrefix: "",
     civics: [newCivic("civic", 1)],
+    traits: [],
+    policies: [],
+    resolutions: [],
   };
 }
 
-/** Load + normalize a stored project, filling in fields added since v1. */
+/** Load + normalize a stored project, filling in fields added over time. */
 function loadProject(): ModProject {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<ModProject>;
-      if (p.civics?.length) {
+      if (p.civics || p.traits || p.policies || p.resolutions) {
         return {
           ...defaultProject(),
           ...p,
           idPrefix: p.idPrefix ?? "",
-          civics: p.civics.map((c) => migrateCivic(c as Civic & LegacyCivic)),
+          civics: (p.civics ?? []).map((c) =>
+            migrateCivic(c as Civic & LegacyCivic),
+          ),
+          traits: p.traits ?? [],
+          policies: p.policies ?? [],
+          resolutions: p.resolutions ?? [],
         } as ModProject;
       }
     }
@@ -210,39 +292,68 @@ export default function App() {
   }, [toast]);
 
   // Inventory of the currently selected object type.
-  const inventory = project.civics.filter((c) => c.kind === activeType);
-  const active =
-    inventory.find((c) => c.id === activeId) ?? inventory[0] ?? null;
+  const collectionKey = COLLECTION[activeType];
+  const inventoryOf = (proj: ModProject, type: string): AnyObject[] => {
+    const arr = proj[COLLECTION[type]] as AnyObject[];
+    return type === "civic" || type === "origin"
+      ? (arr as Civic[]).filter((c) => c.kind === type)
+      : arr;
+  };
+  const inventory = inventoryOf(project, activeType);
+  const active = inventory.find((o) => o.id === activeId) ?? inventory[0] ?? null;
 
-  const updateCivic = (updated: Civic) =>
+  const updateObject = (updated: AnyObject) =>
     setProject((p) => ({
       ...p,
-      civics: p.civics.map((c) => (c.id === updated.id ? updated : c)),
+      [collectionKey]: (p[collectionKey] as AnyObject[]).map((o) =>
+        o.id === updated.id ? updated : o,
+      ),
     }));
 
-  const addCivic = () =>
+  const addObject = () =>
     setProject((p) => {
-      const count = p.civics.filter((c) => c.kind === activeType).length;
-      const civic = newCivic(activeType as CivicKind, count + 1);
-      setActiveId(civic.id);
+      const count = inventoryOf(p, activeType).length;
+      const obj = newObject(activeType, count + 1);
+      setActiveId(obj.id);
       setTab("inventory");
-      return { ...p, civics: [...p.civics, civic] };
+      const key = COLLECTION[activeType];
+      return { ...p, [key]: [...(p[key] as AnyObject[]), obj] };
     });
 
-  const deleteCivic = (id: string) =>
+  const deleteObject = (id: string) =>
     setProject((p) => {
-      const civics = p.civics.filter((c) => c.id !== id);
-      const remaining = civics.filter((c) => c.kind === activeType);
-      setActiveId(remaining[0]?.id ?? "");
-      return { ...p, civics };
+      const next = (p[collectionKey] as AnyObject[]).filter((o) => o.id !== id);
+      setActiveId(inventoryOf({ ...p, [collectionKey]: next }, activeType)[0]?.id ?? "");
+      return { ...p, [collectionKey]: next };
     });
 
   const selectType = (id: string) => {
     setActiveType(id);
-    const first = project.civics.find((c) => c.kind === id);
-    setActiveId(first?.id ?? "");
+    setActiveId(inventoryOf(project, id)[0]?.id ?? "");
     setTab("inventory");
   };
+
+  // All mod objects, surfaced in identifier autocomplete.
+  const localIds: NamedEntry[] = [
+    ...project.civics,
+    ...project.traits,
+    ...project.policies,
+    ...project.resolutions,
+  ].map((o) => ({ key: effectiveKey(project, o), name: o.name || o.key }));
+
+  function subText(o: AnyObject): string {
+    if ("options" in o) return `${o.options.length} options`;
+    if ("level" in o) return `tier ${o.level}`;
+    if ("modifiers" in o)
+      return `${o.modifiers.length} modifier${o.modifiers.length !== 1 ? "s" : ""}`;
+    return "";
+  }
+  const items: SidebarItem[] = inventory.map((o) => ({
+    id: o.id,
+    name: o.name,
+    iconDataUrl: "iconDataUrl" in o ? o.iconDataUrl : null,
+    sub: subText(o),
+  }));
 
   const exportMod = async () => {
     setExporting(true);
@@ -257,9 +368,12 @@ export default function App() {
     }
   };
 
-  const civicCount = project.civics.filter((c) => c.kind === "civic").length;
-  const originCount = project.civics.filter((c) => c.kind === "origin").length;
   const activeTypeDef = OBJECT_TYPES.find((t) => t.id === activeType);
+  const totalObjects =
+    project.civics.length +
+    project.traits.length +
+    project.policies.length +
+    project.resolutions.length;
 
   return (
     <div className="app">
@@ -274,7 +388,7 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         onExport={exportMod}
         exporting={exporting}
-        summary={`${civicCount} civics · ${originCount} origins`}
+        summary={`${totalObjects} object${totalObjects !== 1 ? "s" : ""}`}
       />
 
       <div className="body">
@@ -287,22 +401,24 @@ export default function App() {
           onTabChange={setTab}
           activeType={activeType}
           onSelectType={selectType}
-          civics={inventory}
+          items={items}
           typeLabel={activeTypeDef?.label ?? "Objects"}
-          newLabel={activeType === "origin" ? "New origin" : "New civic"}
-          activeCivicId={active?.id ?? ""}
-          onSelectCivic={setActiveId}
-          onAddCivic={addCivic}
+          newLabel={`New ${activeTypeDef?.label.replace(/s$/, "").toLowerCase() ?? "object"}`}
+          activeItemId={active?.id ?? ""}
+          onSelectItem={setActiveId}
+          onAddItem={addObject}
         />
 
         <main className="main">
           {activeTypeDef?.available && active ? (
-            <CivicEditor
+            <ObjectEditor
               key={active.id}
+              type={activeType}
               project={project}
-              civic={active}
-              onChange={updateCivic}
-              onDelete={() => deleteCivic(active.id)}
+              object={active}
+              localIds={localIds}
+              onChange={updateObject}
+              onDelete={() => deleteObject(active.id)}
             />
           ) : (
             <div className="empty-screen">
@@ -319,9 +435,9 @@ export default function App() {
                 <Button
                   variant="secondary"
                   leadingIcon={<Icon name="Plus" size={16} />}
-                  onClick={addCivic}
+                  onClick={addObject}
                 >
-                  {activeType === "origin" ? "New origin" : "New civic"}
+                  Create one
                 </Button>
               </div>
             </div>
@@ -345,5 +461,63 @@ export default function App() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Routes the active object to its type-specific editor. */
+function ObjectEditor({
+  type,
+  project,
+  object,
+  localIds,
+  onChange,
+  onDelete,
+}: {
+  type: string;
+  project: ModProject;
+  object: AnyObject;
+  localIds: NamedEntry[];
+  onChange: (o: AnyObject) => void;
+  onDelete: () => void;
+}) {
+  if (type === "trait") {
+    return (
+      <TraitEditor
+        project={project}
+        trait={object as Trait}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "policy") {
+    return (
+      <PolicyEditor
+        project={project}
+        policy={object as Policy}
+        localIds={localIds}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  if (type === "resolution") {
+    return (
+      <ResolutionEditor
+        project={project}
+        resolution={object as Resolution}
+        onChange={onChange}
+        onDelete={onDelete}
+      />
+    );
+  }
+  return (
+    <CivicEditor
+      project={project}
+      civic={object as Civic}
+      localIds={localIds}
+      onChange={onChange}
+      onDelete={onDelete}
+    />
   );
 }

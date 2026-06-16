@@ -1,8 +1,14 @@
 import { Tabs, Button, IconButton, Icon, Badge } from "../ds";
 import { OBJECT_TYPES } from "../objectTypes";
-import type { Civic } from "../types";
 
 export type SidebarTab = "types" | "inventory";
+
+export interface SidebarItem {
+  id: string;
+  name: string;
+  iconDataUrl?: string | null;
+  sub?: string;
+}
 
 interface Props {
   collapsed: boolean;
@@ -11,12 +17,12 @@ interface Props {
   onTabChange: (tab: SidebarTab) => void;
   activeType: string;
   onSelectType: (id: string) => void;
-  civics: Civic[];
+  items: SidebarItem[];
   typeLabel: string;
   newLabel: string;
-  activeCivicId: string;
-  onSelectCivic: (id: string) => void;
-  onAddCivic: () => void;
+  activeItemId: string;
+  onSelectItem: (id: string) => void;
+  onAddItem: () => void;
 }
 
 export default function Sidebar({
@@ -26,12 +32,12 @@ export default function Sidebar({
   onTabChange,
   activeType,
   onSelectType,
-  civics,
+  items,
   typeLabel,
   newLabel,
-  activeCivicId,
-  onSelectCivic,
-  onAddCivic,
+  activeItemId,
+  onSelectItem,
+  onAddItem,
 }: Props) {
   if (collapsed) {
     return (
@@ -68,7 +74,7 @@ export default function Sidebar({
           className="spacer"
           items={[
             { value: "types", label: "Types" },
-            { value: "inventory", label: "Inventory", count: civics.length },
+            { value: "inventory", label: "Inventory", count: items.length },
           ]}
         />
         <IconButton label="Collapse sidebar" onClick={onToggleCollapse}>
@@ -105,29 +111,26 @@ export default function Sidebar({
       ) : (
         <div className="sidebar__scroll">
           <div className="sidebar__section-label">{typeLabel}</div>
-          {civics.length === 0 && (
+          {items.length === 0 && (
             <div className="empty">
               Nothing here yet. Create your first below.
             </div>
           )}
-          {civics.map((c) => (
+          {items.map((it) => (
             <div
-              key={c.id}
+              key={it.id}
               className={[
                 "inv-item",
-                c.id === activeCivicId && "inv-item--active",
+                it.id === activeItemId && "inv-item--active",
               ]
                 .filter(Boolean)
                 .join(" ")}
-              onClick={() => onSelectCivic(c.id)}
+              onClick={() => onSelectItem(it.id)}
             >
-              <img className="inv-item__ico" src={c.iconDataUrl ?? undefined} alt="" />
+              <img className="inv-item__ico" src={it.iconDataUrl ?? undefined} alt="" />
               <div style={{ minWidth: 0 }}>
-                <div className="inv-item__name">{c.name || "(unnamed)"}</div>
-                <div className="inv-item__sub">
-                  {c.modifiers.length} modifier
-                  {c.modifiers.length !== 1 ? "s" : ""}
-                </div>
+                <div className="inv-item__name">{it.name || "(unnamed)"}</div>
+                {it.sub && <div className="inv-item__sub">{it.sub}</div>}
               </div>
             </div>
           ))}
@@ -136,7 +139,7 @@ export default function Sidebar({
             size="sm"
             block
             leadingIcon={<Icon name="Plus" size={15} />}
-            onClick={onAddCivic}
+            onClick={onAddItem}
             style={{ marginTop: "var(--space-2)" }}
           >
             {newLabel}

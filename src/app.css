@@ -717,6 +717,28 @@ body,
   color: var(--text-body);
 }
 
+/* Policy option blocks */
+.policy-option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
+.policy-option__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.policy-option__head .smu-field {
+  flex: 1;
+}
+
 .wz-explain {
   font-size: var(--text-xs);
   color: var(--text-muted);

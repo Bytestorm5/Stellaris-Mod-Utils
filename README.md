@@ -12,13 +12,26 @@ light themes, vendored under `src/ds/`).
 
 ## Object types
 
-Civics and **origins** are both supported (an origin is a civic with
-`is_origin = yes` plus a `picture`, optional `starting_colony`, and
-`habitability_preference`). They're picked from the sidebar's **Types** tab and
-share the same editor; origins add their extra fields and export an explicit
-`icon = "gfx/interface/icons/origins/<key>.dds"`. The object-type registry
-(`src/objectTypes.ts`) and the reusable condition/wizard components are built so
-new civic-like types slot in with minimal plumbing.
+Picked from the sidebar's **Types** tab:
+
+- **Civics** — country modifiers gated by ethics/authority.
+- **Origins** — a civic with `is_origin = yes`, a `picture`, optional
+  `starting_colony`/`habitability_preference`, and an origins-folder icon.
+- **Traits** — species or leader traits: a point `cost`, modifiers,
+  `opposites`, and `allowed_archetypes` (species) / `leader_class` (leader).
+- **Policies** — `potential`/`allow` conditions plus a list of `option`s, each
+  with its own modifiers, `valid` conditions, and icon.
+- **Resolutions** — galactic-community resolutions with an icon, group, tier,
+  influence cost, and modifiers; a matching `resolution_category` is generated
+  automatically so they appear in-game.
+
+Each type exports to its own file under `common/` with a shared, BOM-prefixed
+localisation file and DDS icons. The whole pipeline is generic: an object-type
+registry (`src/objectTypes.ts`), a per-type collection on the project, a
+`buildExport` aggregator that groups script blocks by file, and reusable
+building blocks (`ModifiersSection`, `ConditionBuilder`, `IconUpload`,
+`AssignList`, `IdentifierInput`, `PrefixToggle`) shared across every editor —
+so new types slot in with minimal plumbing.
 
 ## App structure
 
