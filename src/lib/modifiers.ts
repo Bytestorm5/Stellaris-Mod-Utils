@@ -23,6 +23,19 @@ export function isMultiplier(key: string): boolean {
   return /_mult$/.test(key);
 }
 
+/**
+ * Short qualifier derived from a modifier's key suffix, used to disambiguate
+ * entries that share a display name (e.g. `_add` vs `_mult`).
+ */
+export function modifierKindLabel(key: string): string | null {
+  if (/_mult$/.test(key)) return "mult";
+  if (/_add$/.test(key)) return "add";
+  if (/_base$/.test(key)) return "base";
+  if (/_reduction$/.test(key)) return "reduction";
+  if (/_perc$/.test(key)) return "%";
+  return null;
+}
+
 /** A friendly interpretation of a value for the modifier, e.g. "+10%". */
 export function interpret(key: string, value: number): string {
   if (!Number.isFinite(value)) return "";

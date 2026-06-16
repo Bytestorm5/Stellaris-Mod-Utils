@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Dialog, Input, Tag, Icon } from "../ds";
-import { MODIFIERS, CATEGORIES } from "../lib/modifiers";
+import { MODIFIERS, CATEGORIES, modifierKindLabel } from "../lib/modifiers";
 
 interface Props {
   open: boolean;
@@ -74,7 +74,12 @@ export default function ModifierPicker({ open, added, onAdd, onClose }: Props) {
               title={isAdded ? "Already added" : "Click to add"}
             >
               <div className="picker-result__info">
-                <div className="t">{m.name}</div>
+                <div className="t">
+                  {m.name}
+                  {modifierKindLabel(m.key) && (
+                    <span className="mod-kind">{modifierKindLabel(m.key)}</span>
+                  )}
+                </div>
                 <div className="k">{m.key}</div>
               </div>
               <div className="picker-result__cat">{m.categories[0]}</div>

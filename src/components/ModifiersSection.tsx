@@ -1,6 +1,11 @@
 import { useState } from "react";
 import type { CivicModifier } from "../types";
-import { MODIFIER_BY_KEY, interpret, isMultiplier } from "../lib/modifiers";
+import {
+  MODIFIER_BY_KEY,
+  interpret,
+  isMultiplier,
+  modifierKindLabel,
+} from "../lib/modifiers";
 import { Input, IconButton, Icon, Button } from "../ds";
 import ModifierPicker from "./ModifierPicker";
 
@@ -113,7 +118,12 @@ function ModifierRow({
   return (
     <div className="mod-row">
       <div className="mod-row__name">
-        <div className="t">{def?.name ?? mod.key}</div>
+        <div className="t">
+          {def?.name ?? mod.key}
+          {modifierKindLabel(mod.key) && (
+            <span className="mod-kind">{modifierKindLabel(mod.key)}</span>
+          )}
+        </div>
         <div className="k">{mod.key}</div>
       </div>
       <span className={`mod-row__interp ${cls}`}>{interpretation}</span>

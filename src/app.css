@@ -336,6 +336,21 @@ body,
   color: var(--text-strong);
 }
 
+/* Suffix qualifier (add / mult / …) that disambiguates same-named modifiers */
+.mod-kind {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  vertical-align: middle;
+}
+
 .mod-row__name .k {
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
